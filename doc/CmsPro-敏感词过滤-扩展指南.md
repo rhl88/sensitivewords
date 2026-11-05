@@ -1,6 +1,6 @@
 # CmsPro 敏感词过滤扩展指南
 
-> 版本：1.0.0 | 更新日期：2026-11-05
+> 版本：1.1.0 | 更新日期：2026-11-05
 > 适用应用：CmsproSensitivewords v1.0.0+
 
 ---
@@ -237,6 +237,7 @@ $hooks->registerAction('cmspro.sensitivewords.hit', function (array $hits, array
 4. **不要在循环中反复 check 同一段文本**：check 会写日志与计数，干跑预览请用 `inspect()`
 5. **钩子归属**：注册本应用钩子时第 4 参必须传调用方自己的 app_id（不是 `cmspro.sensitivewords`），保证调用方被禁用时钩子自动摘除
 6. **事务边界**：命中日志写入不在调用方事务内（内部 try-catch 兜底），过滤失败不会回滚调用方业务
+7. **词库导出契约**：`SensitiveLibraryService::buildReleasePackage()` 产出的 zip 与 Versionsvr 规范化发布包同构（`words.txt` 四段式 + `meta.json`），其他应用若需自建词库分发可复用该格式；四段式中动作为空但存在级别/分类时必须保留中间空段（如 `代开票,,3,fraud`），省略会导致消费端字段错位
 
 ---
 
@@ -244,4 +245,5 @@ $hooks->registerAction('cmspro.sensitivewords.hit', function (array $hits, array
 
 | 版本 | 日期 | 更新人 | 说明 |
 |------|------|--------|------|
+| 1.1.0 | 2026-11-05 | 开发团队 | 新增词库导出能力（`buildReleasePackage()`），导出与版本服务发布包同构的 zip，可直接上传 Versionsvr 发布；补充词库导出契约说明 |
 | 1.0.0 | 2026-11-05 | 开发团队 | 初始版本：四种扩展接口（辅助函数/验证规则/Service/钩子）+ HTTP API |

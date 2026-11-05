@@ -164,20 +164,180 @@ class SensitiveLibraryService
     }
 
     /**
-     * 导出词库为下载响应内容。
+     * 导出词库为纯文本下载内容。
      *
-     * @param array<string,mixed> $conditions 过滤条件
-     * @return array{content:string,file_name:string}
+     * @param array<string,mixed> $conditions 过滤条件（source/sources/category_id/status）
+     * @return array{content:string,file_name:string,word_count:int,category_count:int}
      */
     public function exportToFile(array $conditions = []): array
     {
-        $content = $this->manage->exportWords($conditions);
-        $suffix = $conditions['source'] ?? 'all';
+        $exported = $this->manage->exportWords($conditions);
+        $suffix = $this->exportSuffix($conditions);
+
+        return [
+            'content' => $exported['content'],
+            'file_name' => 'cmspro-sensitivewords-' . $suffix . '-' . date('YmdHis') . '.txt',
+            'word_count' => $exported['word_count'],
+            'category_count' => $exported['category_count'],
+        ];
+    }
+
+    /**
+     * 导出为「版本服务发布包」（zip），可直接上传到 Versionsvr「敏感词库」发布。
+     *
+     * 发布包结构与 Versionsvr SensitiveWordsService 的规范化产物完全同构：
+     *   words.txt —— 标准四段式词库（带版本头注释）
+     *   meta.json —— {version, word_count, category_count, categories, generated_at, format, source_site}
+     * 这样「本站导出 → 版本服务发布 → 其他站点在线同步」形成完整闭环，
+     * 消费端（含本应用的在线同步）无需任何适配即可直接消费。
+     *
+     * @param array<string,mixed> $conditions 过滤条件（source/sources/category_id/status）
+     * @param string|null $version 词库版本号，留空自动生成 YYYYMMDDHHMMSS
+     * @return array{content:string,file_name:string,word_count:int,category_count:int,version:string,checksum:string,size:int}
+     *
+     * @throws RuntimeException 词库为空或打包失败时
+     */
+    public function buildReleasePackage(array $conditions = [], ?string $version = null): array
+    {
+        $exported = $this->manage->exportWords($conditions);
+
+        if ($exported['word_count'] === 0) {
+            throw new RuntimeException('当前筛选条件下没有可导出的词条');
+        }
+
+        $version = $this->resolveExportVersion($version);
+
+        // words.txt：复用 exportWords 的规范化内容，替换头部版本注释为发布包版本
+        $wordsContent = $this->buildReleaseWordsContent($exported['content'], $version, $exported);
+
+        $meta = json_encode([
+            'version' => $version,
+            'word_count' => $exported['word_count'],
+            'category_count' => $exported['category_count'],
+            'categories' => $exported['categories'],
+            'generated_at' => date('Y-m-d H:i:s'),
+            'format' => 'word,action,level,category',
+            'source_site' => (string) config('app.url', ''),
+        ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+
+        $content = $this->makeZipInMemory([
+            self::WORDS_FILE => $wordsContent,
+            self::META_FILE => (string) $meta,
+        ]);
+
+        $fileName = 'cmspro-sensitivewords-' . $version . '.zip';
 
         return [
             'content' => $content,
-            'file_name' => 'cmspro-sensitivewords-' . $suffix . '-' . date('YmdHis') . '.txt',
+            'file_name' => $fileName,
+            'word_count' => $exported['word_count'],
+            'category_count' => $exported['category_count'],
+            'version' => $version,
+            'checksum' => hash('sha256', $content),
+            'size' => strlen($content),
         ];
+    }
+
+    /**
+     * 生成发布包 words.txt 内容（在导出文本前补发布包头注释）。
+     *
+     * @param array{content:string,word_count:int,category_count:int,categories:array<int,string>} $exported
+     */
+    protected function buildReleaseWordsContent(string $exportedContent, string $version, array $exported): string
+    {
+        // 去掉 exportWords 自带的头注释（以 # 开头的连续行），改用发布包头
+        $bodyLines = [];
+        foreach (preg_split('/\r\n|\r|\n/', $exportedContent) ?: [] as $line) {
+            if (str_starts_with($line, '#') || trim($line) === '') {
+                // 头部注释与空行跳过；词条行不以 # 开头故不受影响
+                continue;
+            }
+            $bodyLines[] = $line;
+        }
+
+        $header = [
+            '# CmsPro 官方敏感词库（发布包）',
+            '# 版本：' . $version,
+            '# 生成时间：' . date('Y-m-d H:i:s'),
+            '# 词条数：' . $exported['word_count'] . '　分类数：' . $exported['category_count'],
+            '# 格式：敏感词,动作(block/replace/warn),级别(1-3),分类code',
+            '# 由敏感词过滤应用导出，供版本服务（Versionsvr）发布、各站点在线同步',
+            '',
+        ];
+
+        return implode("\n", $header) . implode("\n", $bodyLines) . ($bodyLines === [] ? '' : "\n");
+    }
+
+    /**
+     * 在内存中构建 zip（不落磁盘，直接作为下载响应体）。
+     *
+     * ZipArchive 需要文件路径，故写入系统临时目录后读回并删除。
+     *
+     * @param array<string,string> $files 文件名 => 内容
+     * @return string zip 二进制内容
+     *
+     * @throws RuntimeException 打包失败时
+     */
+    protected function makeZipInMemory(array $files): string
+    {
+        $tmpPath = tempnam(sys_get_temp_dir(), 'sw_pkg_');
+        if ($tmpPath === false) {
+            throw new RuntimeException('无法创建临时文件，导出失败');
+        }
+
+        try {
+            $zip = new ZipArchive();
+            if ($zip->open($tmpPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+                throw new RuntimeException('创建导出包失败');
+            }
+
+            foreach ($files as $name => $content) {
+                $zip->addFromString($name, $content);
+            }
+            $zip->close();
+
+            $content = File::get($tmpPath);
+            if ($content === false || $content === '') {
+                throw new RuntimeException('导出包内容为空');
+            }
+
+            return $content;
+        } finally {
+            if (File::exists($tmpPath)) {
+                File::delete($tmpPath);
+            }
+        }
+    }
+
+    /**
+     * 解析导出版本号：显式传入则用之，否则按 YYYYMMDDHHMMSS 生成。
+     */
+    protected function resolveExportVersion(?string $version): string
+    {
+        $version = trim((string) $version);
+
+        return $version !== '' ? mb_substr($version, 0, 32) : date('YmdHis');
+    }
+
+    /**
+     * 导出文件名来源后缀（多来源用 all，单一来源用其标识）。
+     *
+     * @param array<string,mixed> $conditions
+     */
+    protected function exportSuffix(array $conditions): string
+    {
+        if (! empty($conditions['source'])) {
+            return (string) $conditions['source'];
+        }
+        if (! empty($conditions['sources'])) {
+            $sources = is_array($conditions['sources']) ? $conditions['sources'] : explode(',', (string) $conditions['sources']);
+            $sources = array_values(array_filter(array_map(fn ($s) => trim((string) $s), $sources), fn ($s) => $s !== ''));
+            if (count($sources) === 1) {
+                return $sources[0];
+            }
+        }
+
+        return 'all';
     }
 
     // ══════════════════════════════════════════════════════════════

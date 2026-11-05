@@ -138,6 +138,68 @@ class LibraryController extends BaseController
     }
 
     /**
+     * 导出本地词库。
+     *
+     * 支持两种格式：
+     * - format=zip（默认）：版本服务发布包（words.txt + meta.json），可直接上传到
+     *   Versionsvr「敏感词库」页发布，供其他站点在线同步
+     * - format=txt：纯文本词库，可再导入本应用或其他站点
+     *
+     * @param Request $request sources（多选来源，逗号分隔）、category_id、status、version、format
+     */
+    public function export(Request $request)
+    {
+        if (! $this->hasPermission('word.import')) {
+            return $this->forbidden('导出词库');
+        }
+
+        $validated = $request->validate([
+            'sources' => 'nullable|string|max:100',
+            'category_id' => 'nullable|integer|min:0',
+            'status' => 'nullable|integer|in:0,1',
+            'version' => 'nullable|string|max:32',
+            'format' => 'nullable|string|in:zip,txt',
+        ], [
+            'version.max' => '版本号不得超过 32 个字符',
+        ], [
+            'sources' => '词库来源',
+            'version' => '版本号',
+        ]);
+
+        $conditions = array_filter([
+            'sources' => (string) ($validated['sources'] ?? ''),
+            'category_id' => $validated['category_id'] ?? '',
+            'status' => $validated['status'] ?? '',
+        ], fn ($v) => $v !== '' && $v !== null);
+
+        $format = $validated['format'] ?? 'zip';
+
+        try {
+            if ($format === 'txt') {
+                $result = $this->library->exportToFile($conditions);
+
+                return response($result['content'], 200, [
+                    'Content-Type' => 'text/plain; charset=UTF-8',
+                    'Content-Disposition' => 'attachment; filename="' . $result['file_name'] . '"',
+                ]);
+            }
+
+            $package = $this->library->buildReleasePackage($conditions, $validated['version'] ?? null);
+
+            return response($package['content'], 200, [
+                'Content-Type' => 'application/zip',
+                'Content-Disposition' => 'attachment; filename="' . $package['file_name'] . '"',
+                'X-Word-Count' => (string) $package['word_count'],
+                'X-Checksum-Sha256' => $package['checksum'],
+            ]);
+        } catch (RuntimeException $e) {
+            return response()->json(ApiResponse::error(40001, $e->getMessage()), 400);
+        } catch (Throwable $e) {
+            return response()->json(ApiResponse::error(50001, '导出失败：' . $e->getMessage()), 500);
+        }
+    }
+
+    /**
      * 按来源清理词条（如清空在线词库、清空导入词库，不影响手工词条）。
      */
     public function clearBySource(Request $request): JsonResponse

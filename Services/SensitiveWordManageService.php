@@ -385,15 +385,29 @@ class SensitiveWordManageService
     }
 
     /**
-     * 导出词条为文本（每行「词,动作,级别,分类code」，可被 parseWordLines 再次导入）。
+     * 导出词条为文本（标准四段式，可被 parseWordLines 与 Versionsvr 再次解析）。
      *
-     * @param array<string,mixed> $conditions 过滤条件（source/category_id/status）
+     * 行格式 `词,动作,级别,分类code`，级别 1（默认值）压为空串，并只裁剪尾部连续
+     * 空段、保留中间空段以维持字段位置——这样导出的文件上传到版本服务发布后，
+     * 各站点再同步导入时动作/级别/分类不会错位。
+     *
+     * @param array<string,mixed> $conditions 过滤条件：source（单一来源）、sources（多来源，数组或逗号分隔）、category_id、status
+     * @return array{content:string,word_count:int,category_count:int,categories:array<int,string>}
      */
-    public function exportWords(array $conditions = []): string
+    public function exportWords(array $conditions = []): array
     {
         $query = SensitiveWord::query();
         foreach ($conditions as $field => $value) {
             if ($value === null || $value === '') {
+                continue;
+            }
+            // sources 支持多选来源（数组或逗号分隔字符串）
+            if ($field === 'sources') {
+                $sources = is_array($value) ? $value : explode(',', (string) $value);
+                $sources = array_values(array_filter(array_map(fn ($s) => trim((string) $s), $sources), fn ($s) => $s !== ''));
+                if ($sources !== []) {
+                    $query->whereIn('source', $sources);
+                }
                 continue;
             }
             $query->where($field, $value);
@@ -401,24 +415,52 @@ class SensitiveWordManageService
 
         $categoryCodes = SensitiveCategory::pluck('code', 'id')->all();
 
-        $lines = [
-            '# CmsPro 敏感词库导出文件',
-            '# 格式：敏感词,动作(block/replace/warn),级别(1-3),分类code',
-            '# 导出时间：' . date('Y-m-d H:i:s'),
-        ];
+        $lines = [];
+        $categories = [];
 
-        $query->orderBy('id')->chunk(1000, function ($words) use (&$lines, $categoryCodes) {
+        $query->orderBy('id')->chunk(1000, function ($words) use (&$lines, &$categories, $categoryCodes) {
             foreach ($words as $word) {
-                $lines[] = implode(',', [
-                    $word->word,
+                $categoryCode = $categoryCodes[(int) $word->category_id] ?? '';
+                $level = (int) $word->level;
+
+                $segments = [
+                    (string) $word->word,
                     (string) $word->action,
-                    (string) $word->level,
-                    $categoryCodes[(int) $word->category_id] ?? '',
-                ]);
+                    $level > 1 ? (string) $level : '',
+                    $categoryCode,
+                ];
+
+                // 仅裁剪尾部空段，保留中间空段（防止字段错位）
+                while (count($segments) > 1 && $segments[count($segments) - 1] === '') {
+                    array_pop($segments);
+                }
+
+                $lines[] = implode(',', $segments);
+
+                if ($categoryCode !== '') {
+                    $categories[$categoryCode] = true;
+                }
             }
         });
 
-        return implode("\n", $lines) . "\n";
+        $categoryList = array_keys($categories);
+        sort($categoryList);
+
+        $header = [
+            '# CmsPro 敏感词库导出文件',
+            '# 格式：敏感词,动作(block/replace/warn),级别(1-3),分类code',
+            '# 动作/级别留空表示跟随分类与全局策略；级别 1 为默认值故省略',
+            '# 词条数：' . count($lines) . '　分类数：' . count($categoryList),
+            '# 导出时间：' . date('Y-m-d H:i:s'),
+            '# 本文件可直接上传到「版本服务 → 敏感词库」发布，供各站点在线同步',
+        ];
+
+        return [
+            'content' => implode("\n", $header) . "\n" . implode("\n", $lines) . ($lines === [] ? '' : "\n"),
+            'word_count' => count($lines),
+            'category_count' => count($categoryList),
+            'categories' => $categoryList,
+        ];
     }
 
     // ══════════════════════════════════════════════════════════════

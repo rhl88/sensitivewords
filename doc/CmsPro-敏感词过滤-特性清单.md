@@ -1,7 +1,7 @@
 # 敏感词过滤 · 特性清单
 
-> 版本：1.0.0 | 更新日期：2026-11-05
-> 应用版本：1.0.0 | 应用 ID：`cmspro.sensitivewords`
+> 版本：1.1.0 | 更新日期：2026-11-05
+> 应用版本：1.1.0 | 应用 ID：`cmspro.sensitivewords`
 
 > 本文档系统整理本应用覆盖的 CmsPro v5 框架特性，并标注对应实现位置，作为应用开发与二次开发的官方参考。
 
@@ -108,6 +108,10 @@
 | 50 | 编码兜底 | 词库文件 GBK 自动转 UTF-8，去 BOM | `SensitiveLibraryService::convertToUtf8()` |
 | 51 | 三种词库来源 | builtin（内置）/ import（导入）/ library（在线）/ manual（手工）按 source 区分 | `Models/SensitiveWord.php` 常量 |
 | 52 | 弱依赖降级 | optional_app_ids 声明 versionsvr；未安装时在线更新不可用但不影响本地过滤 | `manifest.json` dependencies |
+| 53 | 导出为版本服务发布包 | 导出与 Versionsvr 规范化产物同构的 zip（words.txt 四段式 + meta.json），可直接上传发布 | `SensitiveLibraryService::buildReleasePackage()` |
+| 54 | 导出筛选与双格式 | 按来源（多选）/分类/状态筛选，zip 发布包与 txt 纯文本两种格式 | `Controllers/Admin/LibraryController::export()` |
+| 55 | 导出字段不错位 | 动作为空但有级别/分类时保留中间空段（`词,,3,分类`），级别 1 省略 | `SensitiveWordManageService::exportWords()` |
+| 56 | 发布包内存构建 | zip 经系统临时目录构建后读回并删除，不落应用运行时目录 | `SensitiveLibraryService::makeZipInMemory()` |
 
 ## 十一、视图规范
 
@@ -146,10 +150,11 @@
 |---|------|------|---------|
 | 69 | 应用级测试 | 单元 + 功能测试放 `Tests/`（命名空间 `App\Apps\CmsproSensitivewords\Tests`），不入框架 tests/ | `Tests/` |
 | 70 | RefreshDatabase 隔离 | sqlite :memory:，不污染真实库；tearDown 清理 storage 词典缓存 | `Tests/SensitivewordsTestCase.php` |
-| 71 | 场景全覆盖 | 正常/异常/边界/权限/校验失败；85 个测试全部通过 | `Tests/Unit` + `Tests/Feature` |
+| 71 | 场景全覆盖 | 正常/异常/边界/权限/校验失败；95 个测试全部通过 | `Tests/Unit` + `Tests/Feature` |
 
 ## 十五、版本历史
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| 1.1.0 | 2026-11-05 | 词库维护页新增导出能力：可导出与版本服务发布包同构的 zip（words.txt + meta.json），支持来源/分类/状态筛选；导出四段式修复中间空段丢失导致的字段错位；测试增至 95 个 |
 | 1.0.0 | 2026-11-05 | 初始版本：DFA 过滤引擎、词条/分类管理、命中日志、四种扩展接口、内置基础词库、在线词库更新（对接 Versionsvr） |

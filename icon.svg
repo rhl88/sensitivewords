@@ -1,15 +1,89 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="敏感词过滤">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#ff9a44"/>
-      <stop offset="100%" stop-color="#fc6076"/>
+    <!-- 背景：靛蓝 → 紫的对角渐变，比单色更有层次 -->
+    <linearGradient id="swBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4F6BF5"/>
+      <stop offset="52%" stop-color="#6C4CF1"/>
+      <stop offset="100%" stop-color="#9B3BE8"/>
     </linearGradient>
+
+    <!-- 顶部柔光：模拟玻璃质感高光 -->
+    <radialGradient id="swGloss" cx="0.28" cy="0.1" r="0.9">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.34"/>
+      <stop offset="48%" stop-color="#FFFFFF" stop-opacity="0.07"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- 底部暗角：增加立体纵深 -->
+    <radialGradient id="swVignette" cx="0.5" cy="1.02" r="0.72">
+      <stop offset="0%" stop-color="#1B1145" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#1B1145" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- 漏斗主体：白 → 淡蓝，避免纯白平板 -->
+    <linearGradient id="swFunnel" x1="0.1" y1="0" x2="0.7" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#D9E2FF"/>
+    </linearGradient>
+
+    <!-- 漏斗左侧内壁阴影：营造锥形厚度 -->
+    <linearGradient id="swInner" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#7C90DE" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#7C90DE" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- 通过徽章：绿色渐变 -->
+    <linearGradient id="swBadge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#43E695"/>
+      <stop offset="100%" stop-color="#0FA968"/>
+    </linearGradient>
+
+    <!-- 漏斗投影 -->
+    <filter id="swShadow" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3.2" flood-color="#1B1145" flood-opacity="0.32"/>
+    </filter>
+
+    <!-- 徽章投影 -->
+    <filter id="swBadgeShadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.4" flood-color="#0B2E1D" flood-opacity="0.4"/>
+    </filter>
   </defs>
-  <rect width="120" height="120" rx="24" fill="url(#bg)"/>
-  <!-- 漏斗：象征过滤 -->
-  <path d="M32 34h56l-20 24v26l-16 8V58L32 34z" fill="#ffffff" opacity="0.95"/>
-  <!-- 被拦截的敏感词点 -->
-  <circle cx="46" cy="26" r="4" fill="#ffffff" opacity="0.85"/>
-  <circle cx="60" cy="22" r="4" fill="#ffffff" opacity="0.85"/>
-  <circle cx="74" cy="26" r="4" fill="#ffffff" opacity="0.85"/>
+
+  <!-- 底板 -->
+  <rect width="120" height="120" rx="27" fill="url(#swBg)"/>
+  <rect width="120" height="120" rx="27" fill="url(#swVignette)"/>
+  <rect width="120" height="120" rx="27" fill="url(#swGloss)"/>
+  <!-- 内描边：细白边提升精致度 -->
+  <rect x="1.5" y="1.5" width="117" height="117" rx="25.5" fill="none" stroke="#FFFFFF" stroke-opacity="0.22" stroke-width="1.5"/>
+
+  <!-- 待过滤文本：三个字符块，中间一块标红代表命中的敏感词 -->
+  <g>
+    <rect x="33" y="18" width="12" height="12" rx="3.4" fill="#FFFFFF" fill-opacity="0.92"/>
+    <rect x="54" y="15.5" width="12" height="12" rx="3.4" fill="#FFD9DC"/>
+    <rect x="54" y="15.5" width="12" height="12" rx="3.4" fill="none" stroke="#FF5F6D" stroke-width="1.6"/>
+    <rect x="75" y="18" width="12" height="12" rx="3.4" fill="#FFFFFF" fill-opacity="0.92"/>
+  </g>
+
+  <!-- 漏斗：描边与填充同色 + round join，让转角圆润 -->
+  <g filter="url(#swShadow)">
+    <path d="M31 37 H89 L67 64 V85 L53 92 V64 Z"
+          fill="url(#swFunnel)" stroke="url(#swFunnel)"
+          stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+    <!-- 内壁阴影（左半侧） -->
+    <path d="M36 40 L57 65 V86 L53 88 V64 L34 40 Z" fill="url(#swInner)"/>
+    <!-- 口部高光线 -->
+    <path d="M37 37 H83" stroke="#FFFFFF" stroke-opacity="0.9" stroke-width="2.4" stroke-linecap="round"/>
+  </g>
+
+  <!-- 净化输出：漏斗下方两滴光点，表示过滤后的干净内容 -->
+  <circle cx="60" cy="101" r="3.1" fill="#FFFFFF" fill-opacity="0.9"/>
+  <circle cx="60" cy="110" r="2.1" fill="#FFFFFF" fill-opacity="0.55"/>
+
+  <!-- 通过徽章：右下绿色对勾，白色环与背景分隔 -->
+  <g filter="url(#swBadgeShadow)">
+    <circle cx="88" cy="86" r="17.5" fill="url(#swBadge)" stroke="#FFFFFF" stroke-width="3"/>
+    <path d="M80.6 86.4 l5 5.2 l9.6 -10.4"
+          fill="none" stroke="#FFFFFF" stroke-width="3.6"
+          stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
 </svg>

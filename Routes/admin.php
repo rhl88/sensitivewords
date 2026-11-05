@@ -53,6 +53,8 @@ Route::get('/api/library/check-remote', [LibraryController::class, 'checkRemote'
 Route::post('/api/library/sync-remote', [LibraryController::class, 'syncRemote'])->name('library.syncRemote');
 Route::post('/api/library/import-builtin', [LibraryController::class, 'importBuiltin'])->name('library.importBuiltin');
 Route::post('/api/library/clear-source', [LibraryController::class, 'clearBySource'])->name('library.clearSource');
+// 导出本地词库（format=zip 输出版本服务发布包，format=txt 输出纯文本词库）
+Route::get('/api/library/export', [LibraryController::class, 'export'])->name('library.export');
 
 // ══ 四、命中日志 ══════════════════════════════════════════════════
 Route::get('/hit-logs', [HitLogController::class, 'index'])->name('hitLogs.index');

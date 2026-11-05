@@ -493,12 +493,14 @@ class WordController extends BaseController
                 continue;
             }
 
-            $result[] = implode(',', array_filter([
-                $parts[0],
-                $action,
-                $level > 1 ? (string) $level : '',
-                $parts[3] ?? '',
-            ], fn ($v) => $v !== '' && $v !== null));
+            // 仅裁剪尾部连续空段，保留中间空段以维持「词,动作,级别,分类」的字段位置，
+            // 避免动作为空时级别被误读为动作（与 Versionsvr parseWords 同口径修复）
+            $segments = [$parts[0], $action, $level > 1 ? (string) $level : '', (string) ($parts[3] ?? '')];
+            while (count($segments) > 1 && $segments[count($segments) - 1] === '') {
+                array_pop($segments);
+            }
+
+            $result[] = implode(',', $segments);
         }
 
         return implode("\n", $result);

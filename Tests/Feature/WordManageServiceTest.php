@@ -248,7 +248,51 @@ class WordManageServiceTest extends SensitivewordsTestCase
 
         $exported = $this->service()->exportWords();
 
-        $this->assertStringContainsString('赌博,block,3,fraud', $exported);
+        $this->assertSame(1, $exported['word_count']);
+        $this->assertSame(['fraud'], $exported['categories']);
+        $this->assertStringContainsString('赌博,block,3,fraud', $exported['content']);
+    }
+
+    public function test_export_keeps_middle_empty_segment_to_avoid_field_shift(): void
+    {
+        // 动作为空但有级别与分类：必须保留中间空段（赌博,,3,fraud），
+        // 否则级别 3 会被消费端误读为动作、分类丢失（字段错位缺陷回归）
+        $this->service()->createWord([
+            'word' => '代开票',
+            'action' => '',
+            'level' => 3,
+            'category_id' => $this->categoryId('fraud'),
+        ]);
+
+        $exported = $this->service()->exportWords();
+
+        $this->assertStringContainsString('代开票,,3,fraud', $exported['content']);
+    }
+
+    public function test_export_omits_level_one_as_default(): void
+    {
+        // 级别 1 为默认值应压为空串，仅保留词与动作
+        $this->service()->createWord(['word' => '广告词', 'action' => 'replace', 'level' => 1]);
+
+        $exported = $this->service()->exportWords();
+
+        $this->assertStringContainsString('广告词,replace', $exported['content']);
+        $this->assertStringNotContainsString('广告词,replace,1', $exported['content']);
+    }
+
+    public function test_export_filters_by_multiple_sources(): void
+    {
+        $this->service()->createWord(['word' => '手工词']);
+        SensitiveWord::create(['word' => '在线词', 'word_lower' => '在线词', 'source' => SensitiveWord::SOURCE_LIBRARY, 'status' => 1]);
+
+        // 仅导出手工来源
+        $manualOnly = $this->service()->exportWords(['sources' => SensitiveWord::SOURCE_MANUAL]);
+        $this->assertStringContainsString('手工词', $manualOnly['content']);
+        $this->assertStringNotContainsString('在线词', $manualOnly['content']);
+
+        // 多来源（逗号分隔）
+        $both = $this->service()->exportWords(['sources' => SensitiveWord::SOURCE_MANUAL . ',' . SensitiveWord::SOURCE_LIBRARY]);
+        $this->assertSame(2, $both['word_count']);
     }
 
     public function test_hit_log_list_and_delete(): void
