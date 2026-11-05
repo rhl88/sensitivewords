@@ -41,7 +41,7 @@ CmsproSensitivewords/
 ├── Rules/SensitiveWordRule.php   # Laravel ValidationRule 对象规则
 ├── Storage/base_words.txt        # 内置基础词库（随应用分发）
 ├── Views/Admin/                  # words/categories/hit-logs/library/settings 视图
-├── Tests/                        # 应用测试（104 个用例：引擎单测 + 服务/接口/规则/助手/词库导出/设置页功能测试）
+├── Tests/                        # 应用测试（108 个用例：引擎单测 + 服务/接口/规则/助手/词库导出/设置页 + 跨应用契约测试）
 └── doc/                          # 三类应用文档（特性清单/使用指南/扩展指南）
 ```
 
