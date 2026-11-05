@@ -1,64 +1,266 @@
-# CmsPro 敏感词过滤 · 内置基础词库
+# CmsPro 敏感词过滤 · 内置常见词库
 # 格式：敏感词,动作(block/replace/warn),级别(1-3),分类code
-#   - block  禁止：命中即拦截，validateText 返回错误
+#   - block   禁止：命中即拦截，validateText 返回错误
 #   - replace 替换：用掩码字符替换命中词
-#   - warn   提醒：放行原文但记录命中日志
+#   - warn    提醒：放行原文但记录命中日志
 #   - 级别 1=低 2=中 3=高
-#   - 分类code 对应内置分类：politics/porn/abuse/ad/fraud
+#   - 分类code 对应内置分类：abuse(辱骂攻击) / ad(广告推广) / fraud(诈骗违禁) / porn(色情低俗)
 # 以 # 开头的行为注释，空行忽略；文件支持 UTF-8 与 GBK 编码
 #
-# 说明：本文件为随应用分发的小规模示范词库，仅覆盖各类目常见示例词，
-#       用于安装后立即可用的基础防护。生产环境完整词库请通过后台
-#       「词库维护 → 在线更新」从版本服务同步，或「导入词库」上传自有词库。
+# ── 动作与级别的取值原则 ─────────────────────────────────────────
+#   block  ：明确违法违规（赌博、毒品、枪支、证件伪造、诈骗），拦截提交
+#   replace：不雅但未必违法（辱骂、色情导流），掩码替换后放行
+#   warn   ：存在合理正当语境、误伤率偏高（如性教育、影视术语、英文缩写），
+#            仅记日志不改动原文，由管理员按站点调性决定是否加严
+#
+# ── 关于未内置的类目 ─────────────────────────────────────────────
+#   涉政、民族宗教、地域歧视类词条高度敏感，须按属地法规与平台规范维护，
+#   本文件不内置具体词条。请通过「词库维护 → 导入词库」上传自有词库，
+#   或「在线更新」从版本服务同步，并在「分类管理」中为其配置动作。
+#
+# ── 关于误伤 ─────────────────────────────────────────────────────
+#   引擎按「归一化 + 最长匹配」工作，短词与常见词的误伤风险更高
+#   （如英文缩写、单字）。若发现正常内容被误伤，可在后台禁用该词条，
+#   或由接入方注册 cmspro.sensitivewords.whitelist 钩子按场景放行。
 
-# ══ 辱骂攻击（默认 replace）══
+# ══════════════════════════════════════════════════════════════
+# 一、辱骂攻击（abuse）—— 默认 replace，人身威胁类 block
+# ══════════════════════════════════════════════════════════════
+
+# ── 脏话詈词 ──
 傻逼,replace,2,abuse
+傻B,replace,2,abuse
+煞笔,replace,2,abuse
+沙比,replace,2,abuse
+二逼,replace,2,abuse
+妈的,replace,2,abuse
+他妈的,replace,2,abuse
+尼玛,replace,2,abuse
+草泥马,replace,2,abuse
+去你妈的,replace,2,abuse
+狗娘养的,replace,2,abuse
 王八蛋,replace,2,abuse
+王八羔子,replace,2,abuse
+龟孙子,replace,2,abuse
 混蛋,replace,1,abuse
+混账,replace,1,abuse
+畜生,replace,2,abuse
+畜生不如,replace,2,abuse
+禽兽,replace,2,abuse
+狗东西,replace,2,abuse
+狗屎,replace,2,abuse
+贱人,replace,2,abuse
+贱货,replace,2,abuse
+贱骨头,replace,2,abuse
+婊子,replace,2,abuse
 废物,replace,1,abuse
 白痴,replace,1,abuse
+蠢货,replace,1,abuse
+智障,replace,2,abuse
+弱智,replace,2,abuse
+低能儿,replace,2,abuse
 脑残,replace,2,abuse
+人渣,replace,2,abuse
+败类,replace,2,abuse
+垃圾人,replace,2,abuse
+不要脸,replace,1,abuse
+无耻,replace,1,abuse
+下贱,replace,2,abuse
 滚蛋,replace,1,abuse
-去死,replace,2,abuse
-畜生,replace,2,abuse
-贱人,replace,2,abuse
+滚犊子,replace,1,abuse
+死开,replace,1,abuse
 
-# ══ 广告推广（默认 replace）══
+# ── 恶毒诅咒（人身攻击升级，动作加严）──
+死全家,block,3,abuse
+断子绝孙,block,3,abuse
+不得好死,block,3,abuse
+去死,replace,2,abuse
+该死的东西,replace,2,abuse
+祝你早死,block,3,abuse
+
+# ── 网络泛化用语（误伤风险偏高，仅提醒）──
+沙雕,warn,1,abuse
+智障操作,warn,1,abuse
+脑残粉,warn,1,abuse
+
+# ══════════════════════════════════════════════════════════════
+# 二、广告推广（ad）—— 导流与垃圾营销，默认 replace
+# ══════════════════════════════════════════════════════════════
+
+# ── 联系方式导流（含常见谐音变体）──
 加微信,replace,1,ad
 加V信,replace,1,ad
 微信号,replace,1,ad
-代购,replace,1,ad
-刷单,replace,2,ad
-兼职日结,replace,2,ad
-高薪招聘,replace,1,ad
-免费领取,replace,1,ad
+薇信,replace,1,ad
+威信,replace,1,ad
+微芯,replace,1,ad
+加QQ,replace,1,ad
+扣扣,replace,1,ad
+加我私聊,replace,1,ad
+私我详聊,replace,1,ad
+有意者联系,replace,1,ad
+非诚勿扰,replace,1,ad
+
+# ── 引流关注 ──
+扫码关注,replace,1,ad
+关注公众号,replace,1,ad
 点击链接,replace,1,ad
 扫码进群,replace,2,ad
+扫码领红包,replace,2,ad
+加微信领,replace,2,ad
+免费领取,replace,1,ad
+免费试用,replace,1,ad
 
-# ══ 诈骗违禁（默认 block，高危）══
-办假证,block,3,fraud
-代开发票,block,3,fraud
+# ── 招商代理 ──
+招商加盟,replace,1,ad
+诚招代理,replace,1,ad
+代理加盟,replace,1,ad
+一手货源,replace,1,ad
+厂家直销,replace,1,ad
+低价出售,replace,1,ad
+限时特价,replace,1,ad
+立即抢购,replace,1,ad
+代购,replace,1,ad
+
+# ── 网赚与刷单（灰产导流，动作加严）──
+刷单,replace,2,ad
+兼职刷单,replace,2,ad
+招兼职,replace,2,ad
+兼职日结,replace,2,ad
+高薪招聘,replace,1,ad
+日入千元,replace,2,ad
+月入过万,replace,2,ad
+躺赚,replace,2,ad
+被动收入,replace,2,ad
+网赚,replace,2,ad
+
+# ── 短缩写（极易误伤代码与技术文本，仅提醒）──
+vx,warn,1,ad
+wx,warn,1,ad
+
+# ══════════════════════════════════════════════════════════════
+# 三、诈骗违禁（fraud）—— 明确违法违规，默认 block，级别 3
+# ══════════════════════════════════════════════════════════════
+
+# ── 赌博 ──
+赌博,block,3,fraud
+网上赌博,block,3,fraud
 博彩,block,3,fraud
 赌场,block,3,fraud
+线上赌场,block,3,fraud
+真人娱乐,block,3,fraud
+百家乐,block,3,fraud
+老虎机,block,3,fraud
 六合彩,block,3,fraud
 私彩,block,3,fraud
-放贷,block,3,fraud
-高利贷,block,3,fraud
-迷药,block,3,fraud
-枪支,block,3,fraud
-弹药,block,3,fraud
+时时彩,block,3,fraud
+北京赛车,block,3,fraud
+幸运飞艇,block,3,fraud
+彩票预测,block,3,fraud
+菠菜平台,block,3,fraud
+包网,block,3,fraud
+赌球,block,3,fraud
+
+# ── 毒品与药物滥用 ──
 毒品,block,3,fraud
 冰毒,block,3,fraud
+海洛因,block,3,fraud
+可卡因,block,3,fraud
+大麻,block,3,fraud
 摇头丸,block,3,fraud
+麻古,block,3,fraud
+K粉,block,3,fraud
+笑气,block,3,fraud
+迷奸药,block,3,fraud
+迷药,block,3,fraud
+听话水,block,3,fraud
 
-# ══ 色情低俗（默认 block）══
+# ── 枪支弹药与管制器具 ──
+枪支,block,3,fraud
+仿真枪,block,3,fraud
+气枪,block,3,fraud
+弹药,block,3,fraud
+子弹,block,3,fraud
+雷管,block,3,fraud
+炸药,block,3,fraud
+军火,block,3,fraud
+管制刀具,block,3,fraud
+
+# ── 证件与信用伪造 ──
+办假证,block,3,fraud
+办理证件,block,3,fraud
+身份证代办,block,3,fraud
+毕业证代办,block,3,fraud
+学历代办,block,3,fraud
+学位证代办,block,3,fraud
+驾驶证代办,block,3,fraud
+代开发票,block,3,fraud
+银行流水代办,block,3,fraud
+征信修复,block,3,fraud
+洗白征信,block,3,fraud
+
+# ── 非法金融 ──
+高利贷,block,3,fraud
+放贷,block,3,fraud
+套路贷,block,3,fraud
+裸贷,block,3,fraud
+无抵押贷款,block,3,fraud
+信用卡套现,block,3,fraud
+POS机套现,block,3,fraud
+刷流水,block,3,fraud
+资金盘,block,3,fraud
+传销,block,3,fraud
+庞氏骗局,block,3,fraud
+杀猪盘,block,3,fraud
+稳赚不赔,block,3,fraud
+内部渠道,replace,2,fraud
+
+# ── 其他违禁交易 ──
+器官买卖,block,3,fraud
+代孕,block,3,fraud
+买卖个人信息,block,3,fraud
+出售公民信息,block,3,fraud
+黑客接单,block,3,fraud
+人肉搜索,replace,2,fraud
+
+# ══════════════════════════════════════════════════════════════
+# 四、色情低俗（porn）—— 交易与传播类 block，表述类 replace/warn
+# ══════════════════════════════════════════════════════════════
+
+# ── 色情内容传播 ──
 色情,block,3,porn
-裸聊,block,3,porn
-一夜情,block,3,porn
+黄片,block,3,porn
+毛片,block,3,porn
+A片,block,3,porn
+成人视频,block,3,porn
+成人网站,block,3,porn
+黄色网站,block,3,porn
+情色小说,block,3,porn
+福利姬,block,3,porn
+无码,replace,2,porn
+有码,replace,2,porn
+
+# ── 性交易与招嫖 ──
+卖淫,block,3,porn
+嫖娼,block,3,porn
+性服务,block,3,porn
+特殊服务,block,3,porn
+上门服务,block,3,porn
+小姐上门,block,3,porn
+楼凤,block,3,porn
+包养,block,3,porn
 援交,block,3,porn
 约炮,block,3,porn
-成人视频,block,3,porn
+一夜情,block,3,porn
+裸聊,block,3,porn
 
-# ══ 涉政违规（默认 block，示例占位）══
-# 涉政类词条高度敏感且需按属地法规维护，此处不内置具体词条，
-# 请通过在线词库或自有词库导入，并由管理员按实际合规要求配置。
+# ── 低俗表述（科普与新闻语境常见，动作从宽）──
+裸照,replace,3,porn
+裸体,replace,1,porn
+自慰,replace,1,porn
+口交,replace,2,porn
+性爱,replace,1,porn
+做爱,replace,1,porn
+开房,warn,1,porn
+低俗直播,warn,2,porn
+擦边,warn,1,porn

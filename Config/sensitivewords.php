@@ -34,4 +34,7 @@ return [
 
     // 本地已同步的官方词库版本号（系统自动维护，不在 manifest 中声明为可编辑项）
     'library_version' => '',
+
+    // 内置词库文件指纹（系统自动维护，用于升级时增量补齐内置词库）
+    'builtin_library_hash' => '',
 ];

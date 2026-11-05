@@ -35,25 +35,31 @@ class SettingPageTest extends SensitivewordsTestCase
         ];
 
         foreach ($groups as $groupName => $items) {
-            $group = ConfigGroup::create([
-                'code' => 'app_cmspro_sensitivewords_' . $groupName,
-                'name' => $groupName,
-                'app_id' => 'cmspro.sensitivewords',
-                'sort' => 0,
-                'status' => 1,
-            ]);
+            // 组可能已由基类 seedConfigGroups() 按 manifest 创建，
+            // 故用 firstOrCreate 幂等复用，避免撞 config_groups.code 唯一键
+            $group = ConfigGroup::firstOrCreate(
+                ['code' => 'app_cmspro_sensitivewords_' . $groupName],
+                [
+                    'name' => $groupName,
+                    'app_id' => 'cmspro.sensitivewords',
+                    'sort' => 0,
+                    'status' => 1,
+                ]
+            );
 
             foreach ($items as $index => $itemName) {
-                ConfigItem::create([
-                    'code' => 'app_cmspro_sensitivewords_' . $itemName,
-                    'group_id' => $group->id,
-                    'name' => $itemName,
-                    'type' => 'text',
-                    'value' => '',
-                    'tips' => '',
-                    'sort' => $index,
-                    'status' => 1,
-                ]);
+                ConfigItem::firstOrCreate(
+                    ['code' => 'app_cmspro_sensitivewords_' . $itemName],
+                    [
+                        'group_id' => $group->id,
+                        'name' => $itemName,
+                        'type' => 'text',
+                        'value' => '',
+                        'tips' => '',
+                        'sort' => $index,
+                        'status' => 1,
+                    ]
+                );
             }
         }
     }

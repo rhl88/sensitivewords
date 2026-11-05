@@ -121,12 +121,17 @@ class LibraryController extends BaseController
         try {
             $result = $this->library->importBuiltinWords();
 
+            // 指纹未变：词库文件无更新，无需导入
+            if (($result['unchanged'] ?? false) === true) {
+                return response()->json(ApiResponse::success($result, '内置词库已是最新，无需重复导入'));
+            }
+
             if (($result['inserted'] ?? 0) === 0 && ($result['updated'] ?? 0) === 0) {
-                return response()->json(ApiResponse::success($result, '内置基础词库已存在，无需重复导入'));
+                return response()->json(ApiResponse::success($result, '内置词库词条均已存在，无新增'));
             }
 
             return response()->json(ApiResponse::success($result, sprintf(
-                '内置基础词库导入完成：新增 %d，跳过 %d',
+                '内置词库导入完成：新增 %d，跳过 %d',
                 $result['inserted'],
                 $result['skipped']
             )));

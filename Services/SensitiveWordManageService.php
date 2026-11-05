@@ -308,7 +308,19 @@ class SensitiveWordManageService
         DB::beginTransaction();
         try {
             foreach (array_chunk($rows, 500) as $chunk) {
+                // 先算出本批全部归一化键，一次 whereIn 批量取出已存在词条，
+                // 建成 word_lower => 模型 映射。避免逐条查库（N+1）：
+                // 500 条一批只需 1 次查询，而非 500 次。
+                $matchKeys = [];
                 foreach ($chunk as $row) {
+                    $matchKeys[] = $this->buildMatchKey($row['word']);
+                }
+                $existingMap = SensitiveWord::whereIn('word_lower', array_unique($matchKeys))
+                    ->get()
+                    ->keyBy('word_lower')
+                    ->all();
+
+                foreach ($chunk as $index => $row) {
                     $categoryId = $defaultCategoryId;
                     if (($row['category'] ?? '') !== '') {
                         $key = trim((string) $row['category']);
@@ -322,11 +334,11 @@ class SensitiveWordManageService
                         $categoryId = (int) $categoryMap[$key];
                     }
 
-                    $lower = $this->buildMatchKey($row['word']);
-                    $existing = SensitiveWord::where('word_lower', $lower)->first();
+                    $lower = $matchKeys[$index];
+                    $existing = $existingMap[$lower] ?? null;
 
                     if ($existing === null) {
-                        SensitiveWord::create([
+                        $created = SensitiveWord::create([
                             'word' => $row['word'],
                             'word_lower' => $lower,
                             'category_id' => $categoryId,
@@ -335,6 +347,8 @@ class SensitiveWordManageService
                             'source' => $source,
                             'status' => Status::ENABLED->value,
                         ]);
+                        // 同批内可能有归一化同键的词条，登记进映射防止重复插入触发唯一键冲突
+                        $existingMap[$lower] = $created;
                         $stat['inserted']++;
                         continue;
                     }

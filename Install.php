@@ -86,6 +86,9 @@ class Install
         $this->createRuntimeDirs();
         $this->seedDefaultConfigs();
         $this->seedSystemCategories();
+        // 升级时增量补齐内置词库：文件指纹变化（词库扩充）才导入，
+        // skip 模式保留管理员对既有词条的手工调整
+        $this->seedBuiltinWords();
         $this->cleanExpiredLogs();
         $this->clearAppCache();
 

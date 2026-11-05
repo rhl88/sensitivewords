@@ -36,6 +36,7 @@ abstract class SensitivewordsTestCase extends TestCase
 
         $this->createAppTables();
         $this->seedSystemCategories();
+        $this->seedConfigGroups();
         $this->registerAppProvider();
     }
 
@@ -48,6 +49,40 @@ abstract class SensitivewordsTestCase extends TestCase
         }
 
         parent::tearDown();
+    }
+
+    /**
+     * 按 manifest 声明创建配置组（模拟真实安装流程的 seedDefaultConfigs）。
+     *
+     * 必须建组：应用内多处写配置项时以 group_code 定位所属组
+     * （如 SensitiveLibraryService::saveBuiltinHash 写 builtin_library_hash 到
+     * library_settings 组），组不存在会静默跳过写入，导致指纹未落库、
+     * 增量导入判定失效。真实安装时该组由 Install::seedDefaultConfigs() 创建。
+     */
+    protected function seedConfigGroups(): void
+    {
+        if (! Schema::hasTable('config_groups')) {
+            return;
+        }
+
+        $manifestPath = base_path('app/Apps/CmsproSensitivewords/manifest.json');
+        if (! is_file($manifestPath)) {
+            return;
+        }
+
+        $manifest = json_decode((string) file_get_contents($manifestPath), true);
+
+        foreach (($manifest['config_groups'] ?? []) as $index => $group) {
+            \App\Models\ConfigGroup::firstOrCreate(
+                ['code' => 'app_cmspro_sensitivewords_' . $group['name']],
+                [
+                    'name' => (string) $group['title'],
+                    'app_id' => 'cmspro.sensitivewords',
+                    'sort' => $index,
+                    'status' => 1,
+                ]
+            );
+        }
     }
 
     /**

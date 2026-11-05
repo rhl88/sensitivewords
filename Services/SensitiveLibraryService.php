@@ -53,31 +53,98 @@ class SensitiveLibraryService
     // ══════════════════════════════════════════════════════════════
 
     /**
-     * 导入内置基础词库（安装时调用，幂等：已存在 builtin 词条则跳过）。
+     * 导入内置常见词库（安装与升级时调用，增量补齐语义）。
      *
-     * @return array{total:int,inserted:int,updated:int,skipped:int}
+     * 幂等策略：以词库文件内容的指纹（SHA-256）判断是否需要导入——
+     * - 指纹与上次导入一致：跳过（无重复导入开销）
+     * - 指纹不同（应用升级扩充了词库）：以 skip 模式补齐——新词插入，
+     *   已存在的词条跳过，**保留管理员对既有词条的手工调整**（如改过动作/分类）
+     *
+     * 这样「扩充内置词库」对已安装站点也能生效：升级后自动补入新增词条，
+     * 而不会覆盖站点已有的个性化配置。
+     *
+     * @return array{total:int,inserted:int,updated:int,skipped:int,unchanged:bool}
      */
     public function importBuiltinWords(): array
     {
         $path = base_path('app/Apps/CmsproSensitivewords/' . self::BASE_WORDS_FILE);
         if (! is_file($path)) {
-            return ['total' => 0, 'inserted' => 0, 'updated' => 0, 'skipped' => 0];
+            return ['total' => 0, 'inserted' => 0, 'updated' => 0, 'skipped' => 0, 'unchanged' => true];
         }
 
-        if (SensitiveWord::where('source', SensitiveWord::SOURCE_BUILTIN)->exists()) {
-            return ['total' => 0, 'inserted' => 0, 'updated' => 0, 'skipped' => 0];
+        $content = (string) File::get($path);
+        $hash = hash('sha256', $content);
+
+        // 指纹一致：词库未变化，无需重复导入
+        if ($this->localBuiltinHash() === $hash) {
+            return ['total' => 0, 'inserted' => 0, 'updated' => 0, 'skipped' => 0, 'unchanged' => true];
         }
 
-        return $this->importFromText(
-            (string) File::get($path),
+        // skip 模式：新增词条插入，已存在词条保留本地配置不动
+        $stat = $this->importFromText(
+            $content,
             SensitiveWord::SOURCE_BUILTIN,
             'skip',
             'builtin'
         );
+
+        // 记录本次导入的词库指纹，供下次升级比对
+        $this->saveBuiltinHash($hash);
+
+        return $stat + ['unchanged' => false];
     }
 
     /**
-     * 内置基础词库词条数（供后台展示与文档核对）。
+     * 本地已导入的内置词库指纹（空表示从未导入）。
+     */
+    public function localBuiltinHash(): string
+    {
+        try {
+            return (string) $this->config('builtin_library_hash', '');
+        } catch (Throwable $e) {
+            return '';
+        }
+    }
+
+    /**
+     * 记录内置词库指纹（写入配置项，随应用卸载一并清理）。
+     */
+    protected function saveBuiltinHash(string $hash): void
+    {
+        try {
+            $code = 'app_cmspro_sensitivewords_builtin_library_hash';
+            $item = \App\Models\ConfigItem::where('code', $code)->first();
+
+            if ($item !== null) {
+                $item->update(['value' => $hash]);
+            } else {
+                $group = \App\Models\ConfigGroup::where('code', 'app_cmspro_sensitivewords_library_settings')->first();
+                if ($group === null) {
+                    return;
+                }
+
+                \App\Models\ConfigItem::create([
+                    'code' => $code,
+                    'group_id' => $group->id,
+                    'name' => '内置词库指纹',
+                    'type' => 'text',
+                    'value' => $hash,
+                    'tips' => '内置词库文件的内容指纹，用于升级时增量补齐新词，由系统自动维护，请勿手工修改',
+                    'sort' => 98,
+                    'status' => Status::ENABLED->value,
+                ]);
+            }
+
+            if (function_exists('cmspro_sensitivewords_forget_config_cache')) {
+                cmspro_sensitivewords_forget_config_cache(['builtin_library_hash']);
+            }
+        } catch (Throwable $e) {
+            Log::warning('[cmspro.sensitivewords] 内置词库指纹记录失败', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * 内置常见词库词条数（供后台展示与文档核对）。
      */
     public function builtinWordCount(): int
     {

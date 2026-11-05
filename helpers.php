@@ -64,6 +64,7 @@ if (! function_exists('cmspro_sensitivewords_forget_config_cache')) {
             'log_enabled', 'log_content_length', 'log_keep_days', 'stat_hit_count',
             'hook_content_filter', 'hook_user_register',
             'remote_update_enabled', 'remote_update_mode', 'library_category_id',
+            'library_version', 'builtin_library_hash',
         ];
 
         foreach ($keys as $key) {
