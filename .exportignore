@@ -1,0 +1,14 @@
+# CmsproSensitivewords 应用导出排除规则
+# 参考：docs/规则技能包/rules/CmsPro-v5-应用开发文档.md § 应用打包（.exportignore）
+
+# 版本控制
+.git/
+.gitignore
+
+# 测试（开发期产物，不随应用分发）
+Tests/
+
+# 备份与临时文件
+*.bak
+*.tmp
+*.log

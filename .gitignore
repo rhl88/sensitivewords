@@ -1,0 +1,12 @@
+# 依赖与本地环境
+.env
+vendor/
+
+# 运行产物
+*.bak
+*.tmp
+*.log
+*.exe
+
+# 词典编译缓存与词库包（运行期自动生成，可重建）
+Storage/cache/

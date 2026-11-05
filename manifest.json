@@ -1,0 +1,315 @@
+{
+    "id": "cmspro.sensitivewords",
+    "name": "敏感词过滤",
+    "description": "通用敏感词过滤应用，基于 DFA 字典树引擎提供检测、替换、拦截能力，向任意应用开放辅助函数、Service、Filter 钩子与验证规则四种扩展方式，支持词库分类管理、批量导入导出、命中日志与在线词库更新。",
+    "version": "1.0.0",
+    "author": "CmsPro",
+    "author_url": "https://www.cmspro.cn",
+    "icon": "fa fa-filter",
+    "require": {
+        "php": ">=8.3",
+        "cmspro": ">=5.0.0"
+    },
+    "dependencies": {
+        "app_ids": [],
+        "optional_app_ids": [
+            "versionsvr"
+        ],
+        "versions": {}
+    },
+    "providers": [
+        "ServiceProvider"
+    ],
+    "hooks": "Hooks",
+    "install": "Install",
+    "menus": [
+        {
+            "title": "敏感词过滤",
+            "icon": "fa fa-filter",
+            "code": "admin_cmspro_sensitivewords",
+            "order": 97,
+            "children": [
+                {
+                    "title": "词条管理",
+                    "icon": "fa fa-list",
+                    "path": "/admin/cmspro/sensitivewords/words",
+                    "code": "admin_cmspro_sensitivewords_words",
+                    "order": 1
+                },
+                {
+                    "title": "分类管理",
+                    "icon": "fa fa-folder",
+                    "path": "/admin/cmspro/sensitivewords/categories",
+                    "code": "admin_cmspro_sensitivewords_categories",
+                    "order": 2
+                },
+                {
+                    "title": "词库维护",
+                    "icon": "fa fa-database",
+                    "path": "/admin/cmspro/sensitivewords/library",
+                    "code": "admin_cmspro_sensitivewords_library",
+                    "order": 3
+                },
+                {
+                    "title": "命中日志",
+                    "icon": "fa fa-history",
+                    "path": "/admin/cmspro/sensitivewords/hit-logs",
+                    "code": "admin_cmspro_sensitivewords_hit_logs",
+                    "order": 4
+                },
+                {
+                    "title": "过滤设置",
+                    "icon": "fa fa-cog",
+                    "path": "/admin/cmspro/sensitivewords/settings",
+                    "code": "admin_cmspro_sensitivewords_settings",
+                    "order": 5
+                }
+            ]
+        }
+    ],
+    "config_groups": [
+        {
+            "name": "filter_settings",
+            "title": "过滤设置",
+            "items": [
+                {
+                    "name": "filter_enabled",
+                    "title": "过滤总开关",
+                    "type": "switch",
+                    "value": "1",
+                    "tips": "关闭后所有检测与替换调用直接放行原文，用于紧急排障"
+                },
+                {
+                    "name": "default_action",
+                    "title": "默认处理动作",
+                    "type": "select",
+                    "value": "replace",
+                    "options": [
+                        {
+                            "label": "替换（用掩码字符替换命中词）",
+                            "value": "replace"
+                        },
+                        {
+                            "label": "禁止（拦截并返回错误）",
+                            "value": "block"
+                        },
+                        {
+                            "label": "提醒（放行原文但记录日志）",
+                            "value": "warn"
+                        }
+                    ],
+                    "tips": "词条与分类均未指定动作时的兜底动作"
+                },
+                {
+                    "name": "replacement",
+                    "title": "替换掩码字符",
+                    "type": "text",
+                    "value": "*",
+                    "tips": "替换动作使用的掩码字符，按命中词长度重复，如 * → ***"
+                },
+                {
+                    "name": "ignore_case",
+                    "title": "忽略英文大小写",
+                    "type": "switch",
+                    "value": "1",
+                    "tips": "开启后 ABC 与 abc 视为同一敏感词"
+                },
+                {
+                    "name": "skip_symbols",
+                    "title": "跳过干扰字符",
+                    "type": "switch",
+                    "value": "1",
+                    "tips": "开启后可识别「敏★感★词」「敏 感 词」等插入干扰符的变体"
+                },
+                {
+                    "name": "full_width_to_half",
+                    "title": "全角转半角",
+                    "type": "switch",
+                    "value": "1",
+                    "tips": "开启后全角字母数字与半角视为同一字符，防止全角绕过"
+                }
+            ]
+        },
+        {
+            "name": "log_settings",
+            "title": "日志设置",
+            "items": [
+                {
+                    "name": "log_enabled",
+                    "title": "记录命中日志",
+                    "type": "switch",
+                    "value": "1",
+                    "tips": "开启后每次命中写入命中日志表，供后台查询与审计"
+                },
+                {
+                    "name": "log_content_length",
+                    "title": "原文快照长度",
+                    "type": "number",
+                    "value": "200",
+                    "tips": "命中日志中保存的原文片段最大字符数，范围 0-2000，0 表示不保存原文"
+                },
+                {
+                    "name": "log_keep_days",
+                    "title": "日志保留天数",
+                    "type": "number",
+                    "value": "90",
+                    "tips": "超期日志在后台「命中日志」页手动清理或升级时自动清理，0 表示永久保留"
+                },
+                {
+                    "name": "stat_hit_count",
+                    "title": "累计词条命中次数",
+                    "type": "switch",
+                    "value": "1",
+                    "tips": "开启后每次命中回写词条的命中次数与最近命中时间（每次命中额外 2 条 SQL），高并发站点可关闭"
+                }
+            ]
+        },
+        {
+            "name": "hook_settings",
+            "title": "钩子接入设置",
+            "items": [
+                {
+                    "name": "hook_content_filter",
+                    "title": "接入系统内容模块",
+                    "type": "switch",
+                    "value": "0",
+                    "tips": "开启后自动监听 content.before_create / content.before_update 钩子，对系统内容模块的标题与正文执行过滤"
+                },
+                {
+                    "name": "hook_user_register",
+                    "title": "接入前台用户注册",
+                    "type": "switch",
+                    "value": "0",
+                    "tips": "开启后监听 user.before_register 钩子，对注册提交的昵称等字段执行检测"
+                }
+            ]
+        },
+        {
+            "name": "library_settings",
+            "title": "词库设置",
+            "items": [
+                {
+                    "name": "remote_update_enabled",
+                    "title": "启用在线词库更新",
+                    "type": "switch",
+                    "value": "1",
+                    "tips": "开启后可在「词库维护」页检查并同步官方词库（由版本服务 Versionsvr 分发）"
+                },
+                {
+                    "name": "remote_update_mode",
+                    "title": "在线更新方式",
+                    "type": "select",
+                    "value": "merge",
+                    "options": [
+                        {
+                            "label": "增量合并（保留本地词条，仅新增缺失词）",
+                            "value": "merge"
+                        },
+                        {
+                            "label": "覆盖官方库（清除旧官方词条后重新导入，本地自建词条不受影响）",
+                            "value": "replace"
+                        }
+                    ],
+                    "tips": "官方词库来源标记为 library，覆盖更新只处理该来源的词条"
+                },
+                {
+                    "name": "library_category_id",
+                    "title": "在线词库归类",
+                    "type": "number",
+                    "value": "0",
+                    "tips": "在线词库导入到的分类 ID，0 表示按词库包内声明的分类自动归类"
+                },
+                {
+                    "name": "library_version",
+                    "title": "本地词库版本",
+                    "type": "text",
+                    "value": "",
+                    "tips": "最近一次在线同步的官方词库版本号，由系统自动维护，请勿手工修改"
+                }
+            ]
+        }
+    ],
+    "permissions": [
+        {
+            "code": "cmspro.sensitivewords.manage",
+            "name": "敏感词过滤管理"
+        },
+        {
+            "code": "cmspro.sensitivewords.word.view",
+            "name": "查看敏感词条"
+        },
+        {
+            "code": "cmspro.sensitivewords.word.create",
+            "name": "新增敏感词条"
+        },
+        {
+            "code": "cmspro.sensitivewords.word.edit",
+            "name": "编辑敏感词条"
+        },
+        {
+            "code": "cmspro.sensitivewords.word.delete",
+            "name": "删除敏感词条"
+        },
+        {
+            "code": "cmspro.sensitivewords.word.import",
+            "name": "导入导出词库"
+        },
+        {
+            "code": "cmspro.sensitivewords.category.manage",
+            "name": "词条分类管理"
+        },
+        {
+            "code": "cmspro.sensitivewords.log.view",
+            "name": "查看命中日志"
+        },
+        {
+            "code": "cmspro.sensitivewords.log.delete",
+            "name": "清理命中日志"
+        },
+        {
+            "code": "cmspro.sensitivewords.library.update",
+            "name": "在线更新词库"
+        },
+        {
+            "code": "cmspro.sensitivewords.setting.edit",
+            "name": "修改过滤设置"
+        }
+    ],
+    "runtime_files": [
+        {
+            "key": "wordpack",
+            "name": "词库更新包",
+            "dir": "app_cmspro_sensitivewords/wordpack",
+            "type": "package",
+            "description": "从版本服务下载的官方词库发布包",
+            "cleanable": true,
+            "strategy": "keep_latest",
+            "keep": 3,
+            "pattern": [
+                "*.zip"
+            ],
+            "protected": false
+        },
+        {
+            "key": "dictionary",
+            "name": "词典编译缓存",
+            "dir": "app_cmspro_sensitivewords/dictionary",
+            "type": "cache",
+            "description": "DFA 词典树编译产物，词条变更后自动重建",
+            "cleanable": true,
+            "strategy": "manual",
+            "protected": false
+        },
+        {
+            "key": "import_temp",
+            "name": "导入临时文件",
+            "dir": "app_cmspro_sensitivewords/temp",
+            "type": "temp",
+            "description": "词库导入导出过程中的临时文件",
+            "cleanable": true,
+            "strategy": "ttl",
+            "ttl_days": 7,
+            "protected": false
+        }
+    ]
+}

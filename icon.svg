@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ff9a44"/>
+      <stop offset="100%" stop-color="#fc6076"/>
+    </linearGradient>
+  </defs>
+  <rect width="120" height="120" rx="24" fill="url(#bg)"/>
+  <!-- 漏斗：象征过滤 -->
+  <path d="M32 34h56l-20 24v26l-16 8V58L32 34z" fill="#ffffff" opacity="0.95"/>
+  <!-- 被拦截的敏感词点 -->
+  <circle cx="46" cy="26" r="4" fill="#ffffff" opacity="0.85"/>
+  <circle cx="60" cy="22" r="4" fill="#ffffff" opacity="0.85"/>
+  <circle cx="74" cy="26" r="4" fill="#ffffff" opacity="0.85"/>
+</svg>

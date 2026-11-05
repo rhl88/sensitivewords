@@ -1,0 +1,64 @@
+# CmsPro 敏感词过滤 · 内置基础词库
+# 格式：敏感词,动作(block/replace/warn),级别(1-3),分类code
+#   - block  禁止：命中即拦截，validateText 返回错误
+#   - replace 替换：用掩码字符替换命中词
+#   - warn   提醒：放行原文但记录命中日志
+#   - 级别 1=低 2=中 3=高
+#   - 分类code 对应内置分类：politics/porn/abuse/ad/fraud
+# 以 # 开头的行为注释，空行忽略；文件支持 UTF-8 与 GBK 编码
+#
+# 说明：本文件为随应用分发的小规模示范词库，仅覆盖各类目常见示例词，
+#       用于安装后立即可用的基础防护。生产环境完整词库请通过后台
+#       「词库维护 → 在线更新」从版本服务同步，或「导入词库」上传自有词库。
+
+# ══ 辱骂攻击（默认 replace）══
+傻逼,replace,2,abuse
+王八蛋,replace,2,abuse
+混蛋,replace,1,abuse
+废物,replace,1,abuse
+白痴,replace,1,abuse
+脑残,replace,2,abuse
+滚蛋,replace,1,abuse
+去死,replace,2,abuse
+畜生,replace,2,abuse
+贱人,replace,2,abuse
+
+# ══ 广告推广（默认 replace）══
+加微信,replace,1,ad
+加V信,replace,1,ad
+微信号,replace,1,ad
+代购,replace,1,ad
+刷单,replace,2,ad
+兼职日结,replace,2,ad
+高薪招聘,replace,1,ad
+免费领取,replace,1,ad
+点击链接,replace,1,ad
+扫码进群,replace,2,ad
+
+# ══ 诈骗违禁（默认 block，高危）══
+办假证,block,3,fraud
+代开发票,block,3,fraud
+博彩,block,3,fraud
+赌场,block,3,fraud
+六合彩,block,3,fraud
+私彩,block,3,fraud
+放贷,block,3,fraud
+高利贷,block,3,fraud
+迷药,block,3,fraud
+枪支,block,3,fraud
+弹药,block,3,fraud
+毒品,block,3,fraud
+冰毒,block,3,fraud
+摇头丸,block,3,fraud
+
+# ══ 色情低俗（默认 block）══
+色情,block,3,porn
+裸聊,block,3,porn
+一夜情,block,3,porn
+援交,block,3,porn
+约炮,block,3,porn
+成人视频,block,3,porn
+
+# ══ 涉政违规（默认 block，示例占位）══
+# 涉政类词条高度敏感且需按属地法规维护，此处不内置具体词条，
+# 请通过在线词库或自有词库导入，并由管理员按实际合规要求配置。
