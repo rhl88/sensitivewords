@@ -1,6 +1,6 @@
 # 敏感词过滤 应用文档
 
-> 应用 ID：`cmspro.sensitivewords` | 文档版本：1.2.0 | 应用版本：1.2.0
+> 应用 ID：`cmspro.sensitivewords` | 文档版本：1.3.0 | 应用版本：1.3.0
 > 依赖：PHP >= 8.3，CmsPro >= 5.0.0（可选弱依赖：versionsvr，用于在线词库更新与词库发布）
 > 官方地址：https://www.cmspro.cn/apps/cmspro.sensitivewords
 
@@ -13,9 +13,9 @@
 3. **Service 调用**：`app(SensitiveWordService::class)` 获取命中详情、试检测（inspect）、自定义动作处理
 4. **钩子扩展**：`whitelist` 白名单、`before_filter`/`after_filter` 文本加工、`hit` 命中通知
 
-核心业务闭环：**词库管理（分类/词条/导入导出）→ DFA 引擎过滤（三级动作决策 + 归一化变体识别）→ 命中日志审计 → 词库分发（导出发布包上传版本服务 / 在线同步官方词库）**。
+核心业务闭环：**词库管理（分类/词条/导入导出）→ DFA 引擎过滤（三级动作决策 + 归一化变体识别）→ 命中日志审计 → 词库流转（导出备份 / 导入他人词库 / 在线同步官方词库）**。
 
-其中「词库维护」页可导出与版本服务发布包**同构的 zip**（words.txt + meta.json），导出物可直接上传到 Versionsvr「敏感词库」发布，形成「本站整理词库 → 官方发布 → 全网同步」闭环。
+「词库维护」页支持词库导入与导出双向流转：导出 txt/csv/zip，导出格式与导入解析同口径，本站导出的文件可原样导入其他站点。
 
 ## 目录结构
 
@@ -41,7 +41,7 @@ CmsproSensitivewords/
 ├── Rules/SensitiveWordRule.php   # Laravel ValidationRule 对象规则
 ├── Storage/base_words.txt        # 内置基础词库（随应用分发）
 ├── Views/Admin/                  # words/categories/hit-logs/library/settings 视图
-├── Tests/                        # 应用测试（108 个用例：引擎单测 + 服务/接口/规则/助手/词库导出/设置页 + 跨应用契约测试）
+├── Tests/                        # 应用测试（122 个用例：引擎单测 + 服务/接口/规则/助手/词库导出/设置页 + 跨应用契约测试）
 └── doc/                          # 三类应用文档（特性清单/使用指南/扩展指南）
 ```
 

@@ -1,7 +1,7 @@
 # 敏感词过滤 · 特性清单
 
-> 版本：1.2.0 | 更新日期：2026-11-05
-> 应用版本：1.2.0 | 应用 ID：`cmspro.sensitivewords`
+> 版本：1.3.0 | 更新日期：2026-11-05
+> 应用版本：1.3.0 | 应用 ID：`cmspro.sensitivewords`
 
 > 本文档系统整理本应用覆盖的 CmsPro v5 框架特性，并标注对应实现位置，作为应用开发与二次开发的官方参考。
 
@@ -108,57 +108,60 @@
 | 50 | 编码兜底 | 词库文件 GBK 自动转 UTF-8，去 BOM | `SensitiveLibraryService::convertToUtf8()` |
 | 51 | 三种词库来源 | builtin（内置）/ import（导入）/ library（在线）/ manual（手工）按 source 区分 | `Models/SensitiveWord.php` 常量 |
 | 52 | 弱依赖降级 | optional_app_ids 声明 versionsvr；未安装时在线更新不可用但不影响本地过滤 | `manifest.json` dependencies |
-| 53 | 导出为版本服务发布包 | 导出与 Versionsvr 规范化产物同构的 zip（words.txt 四段式 + meta.json），可直接上传发布 | `SensitiveLibraryService::buildReleasePackage()` |
-| 54 | 导出筛选与双格式 | 按来源（多选）/分类/状态筛选，zip 发布包与 txt 纯文本两种格式 | `Controllers/Admin/LibraryController::export()` |
-| 55 | 导出字段不错位 | 动作为空但有级别/分类时保留中间空段（`词,,3,分类`），级别 1 省略 | `SensitiveWordManageService::exportWords()` |
-| 56 | 发布包内存构建 | zip 经系统临时目录构建后读回并删除，不落应用运行时目录 | `SensitiveLibraryService::makeZipInMemory()` |
+| 53 | 词库导入（txt/csv/zip） | zip 内按 words.txt → 任意 .txt → .csv → .dic 逐级放宽定位，兼容包裹目录与他人分享的词库包 | `SensitiveLibraryService::importFromFile()` / `importFromZip()` |
+| 54 | 导入冲突三策略 | skip 跳过已存在 / update 补齐空字段 / overwrite 覆盖；skip 不覆盖本地已调动作 | `SensitiveWordManageService::importRows()` |
+| 55 | 词库导出双格式 | 按来源（多选）/分类/状态筛选，导出 txt 纯文本或 zip 词库包（words.txt + meta.json） | `Controllers/Admin/LibraryController::export()` |
+| 56 | 导出导入格式互认 | 导出格式与导入解析同口径，本站导出物可原样导入（往返不丢动作/级别/分类） | `SensitiveWordManageService::exportWords()` |
+| 57 | 导出字段不错位 | 动作为空但有级别/分类时保留中间空段（`词,,3,分类`），级别 1 省略 | `SensitiveWordManageService::exportWords()` |
+| 58 | 词库包内存构建 | zip 经系统临时目录构建后读回并删除，不落应用运行时目录 | `SensitiveLibraryService::makeZipInMemory()` |
 
 ## 十一、视图规范
 
 | # | 特性 | 说明 | 实现位置 |
 |---|------|------|---------|
-| 57 | 完整 HTML 结构 | 后台列表页/表单页含完整 `<html>/<head>/<body>` 与公共 CSS 引用 | `Views/Admin/*` |
-| 58 | 表单两种模式 | 词条/分类表单用模式 A（独立页 + iframe `layer.open(type:2)`） | `Views/Admin/words/form.blade.php` 等 |
-| 59 | 固定底部按钮栏 | 表单页「内容区 calc(100vh-52px) + 按钮栏 52px」互补布局 | `Views/Admin/*/form.blade.php` |
-| 60 | @verbatim 包裹 | 所有 Layui `{{# }}` 模板用 `@verbatim/@endverbatim` 包裹 | `Views/Admin/*/index.blade.php` |
-| 61 | CSRF + 401 处理 | `$.ajaxSetup` 注入 X-CSRF-TOKEN，401 跳登录页 | 各视图 JS |
-| 62 | 行内无感知更新 | 状态开关用 `table.updateRow` 单行更新，失败回滚开关 | `Views/Admin/words/index.blade.php` |
-| 63 | 本地资源引用 | 全部引用 `CmsProUi/component/*` 本地路径，无 CDN | 各视图 `<head>` |
-| 64 | 设置页 Tab 分类 | 四组配置按类型分页（过滤/日志/钩子/词库），单一 form 包裹全部面板，底部一次保存全部生效 | `Views/Admin/settings/index.blade.php` |
-| 65 | Tab 切换重渲染 | `element.on('tab()')` 内调 `form.render()`，修正隐藏面板 select 宽度异常 | `Views/Admin/settings/index.blade.php` |
+| 59 | 完整 HTML 结构 | 后台列表页/表单页含完整 `<html>/<head>/<body>` 与公共 CSS 引用 | `Views/Admin/*` |
+| 60 | 表单两种模式 | 词条/分类表单用模式 A（独立页 + iframe `layer.open(type:2)`） | `Views/Admin/words/form.blade.php` 等 |
+| 61 | 固定底部按钮栏 | 表单页「内容区 calc(100vh-52px) + 按钮栏 52px」互补布局 | `Views/Admin/*/form.blade.php` |
+| 62 | @verbatim 包裹 | 所有 Layui `{{# }}` 模板用 `@verbatim/@endverbatim` 包裹 | `Views/Admin/*/index.blade.php` |
+| 63 | CSRF + 401 处理 | `$.ajaxSetup` 注入 X-CSRF-TOKEN，401 跳登录页 | 各视图 JS |
+| 64 | 行内无感知更新 | 状态开关用 `table.updateRow` 单行更新，失败回滚开关 | `Views/Admin/words/index.blade.php` |
+| 65 | 本地资源引用 | 全部引用 `CmsProUi/component/*` 本地路径，无 CDN | 各视图 `<head>` |
+| 66 | 设置页 Tab 分类 | 四组配置按类型分页（过滤/日志/钩子/词库），单一 form 包裹全部面板，底部一次保存全部生效 | `Views/Admin/settings/index.blade.php` |
+| 67 | Tab 切换重渲染 | `element.on('tab()')` 内调 `form.render()`，修正隐藏面板 select 宽度异常 | `Views/Admin/settings/index.blade.php` |
 
 ## 十二、菜单系统
 
 | # | 特性 | 说明 | 实现位置 |
 |---|------|------|---------|
-| 66 | menus 声明带 code | 5 个叶子菜单均声明稳定 code（升级幂等匹配保留角色关联） | `manifest.json` menus |
-| 67 | 目录不声明 path | 含 children 的顶级目录不声明 path（硬性规范） | `manifest.json` menus |
-| 68 | code 全局唯一 | 目录 code 与子菜单 code 互不重复 | `manifest.json` menus |
+| 68 | menus 声明带 code | 5 个叶子菜单均声明稳定 code（升级幂等匹配保留角色关联） | `manifest.json` menus |
+| 69 | 目录不声明 path | 含 children 的顶级目录不声明 path（硬性规范） | `manifest.json` menus |
+| 70 | code 全局唯一 | 目录 code 与子菜单 code 互不重复 | `manifest.json` menus |
 
 ## 十三、扩展接口（供任意应用接入）
 
 | # | 特性 | 说明 | 实现位置 |
 |---|------|------|---------|
-| 69 | 全局辅助函数 | `cmspro_sensitivewords_filter/check/filter_array/available/config` | `helpers.php` |
-| 70 | Service 容器调用 | `app(SensitiveWordService::class)->filter/check/inspect/validateText` | `Services/SensitiveWordService.php` |
-| 71 | 字符串验证规则 | `'sensitive_word'`（Validator::extend 注册，支持场景参数） | `ServiceProvider::registerValidationRule()` |
-| 72 | 对象验证规则 | `new SensitiveWordRule($scene, $sourceApp)`（ValidationRule 接口） | `Rules/SensitiveWordRule.php` |
-| 73 | HTTP 检测接口 | `POST /api/cmspro/sensitivewords/check|filter`（非 PHP 调用方） | `Controllers/HomeApi/FilterApiController.php` |
-| 74 | Filter 钩子扩展 | 其他应用挂 `.whitelist/.before_filter/.after_filter` 定制过滤行为 | `Services/SensitiveWordService.php` |
+| 71 | 全局辅助函数 | `cmspro_sensitivewords_filter/check/filter_array/available/config` | `helpers.php` |
+| 72 | Service 容器调用 | `app(SensitiveWordService::class)->filter/check/inspect/validateText` | `Services/SensitiveWordService.php` |
+| 73 | 字符串验证规则 | `'sensitive_word'`（Validator::extend 注册，支持场景参数） | `ServiceProvider::registerValidationRule()` |
+| 74 | 对象验证规则 | `new SensitiveWordRule($scene, $sourceApp)`（ValidationRule 接口） | `Rules/SensitiveWordRule.php` |
+| 75 | HTTP 检测接口 | `POST /api/cmspro/sensitivewords/check|filter`（非 PHP 调用方） | `Controllers/HomeApi/FilterApiController.php` |
+| 76 | Filter 钩子扩展 | 其他应用挂 `.whitelist/.before_filter/.after_filter` 定制过滤行为 | `Services/SensitiveWordService.php` |
 
 ## 十四、测试
 
 | # | 特性 | 说明 | 实现位置 |
 |---|------|------|---------|
-| 75 | 应用级测试 | 单元 + 功能测试放 `Tests/`（命名空间 `App\Apps\CmsproSensitivewords\Tests`），不入框架 tests/ | `Tests/` |
-| 76 | RefreshDatabase 隔离 | sqlite :memory:，不污染真实库；tearDown 清理 storage 词典缓存 | `Tests/SensitivewordsTestCase.php` |
-| 77 | 场景全覆盖 | 正常/异常/边界/权限/校验失败；108 个测试全部通过 | `Tests/Unit` + `Tests/Feature` |
-| 78 | 跨应用契约测试 | 串联验证「本站导出发布包 → Versionsvr 解析发布 → 产物可回同步」闭环，守护包格式契约 | `Tests/Feature/CrossAppReleaseContractTest.php` |
+| 77 | 应用级测试 | 单元 + 功能测试放 `Tests/`（命名空间 `App\Apps\CmsproSensitivewords\Tests`），不入框架 tests/ | `Tests/` |
+| 78 | RefreshDatabase 隔离 | sqlite :memory:，不污染真实库；tearDown 清理 storage 词典缓存 | `Tests/SensitivewordsTestCase.php` |
+| 79 | 场景全覆盖 | 正常/异常/边界/权限/校验失败；122 个测试全部通过 | `Tests/Unit` + `Tests/Feature` |
+| 80 | 跨应用契约测试 | 串联验证「本站导出发布包 → Versionsvr 解析发布 → 产物可回同步」闭环，守护包格式契约 | `Tests/Feature/CrossAppReleaseContractTest.php` |
 
 ## 十五、版本历史
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| 1.3.0 | 2026-11-05 | 词库导入 / 导出双向打通：新增导入测试 14 个（含 zip 导入回归与导出→导入往返）；修复 `importFromFile()` 调用未定义 `importFromZip()` 致上传 zip 致命错误；zip 内词库文件定位逐级放宽；特性清单重排为 1-80 连续；测试增至 122 个 |
 | 1.2.0 | 2026-11-05 | 「过滤设置」页改为按类型 Tab 分类（四个分页，单一表单统一保存）；新增设置页渲染与配置接口测试；修正本清单特性编号断裂（重排为 1-78 连续）；新增跨应用契约测试（导出发布包 → Versionsvr 解析发布 → 回同步闭环）；测试增至 108 个 |
 | 1.1.0 | 2026-11-05 | 词库维护页新增导出能力：可导出与版本服务发布包同构的 zip（words.txt + meta.json），支持来源/分类/状态筛选；导出四段式修复中间空段丢失导致的字段错位；测试增至 95 个 |
 | 1.0.0 | 2026-11-05 | 初始版本：DFA 过滤引擎、词条/分类管理、命中日志、四种扩展接口、内置基础词库、在线词库更新（对接 Versionsvr） |

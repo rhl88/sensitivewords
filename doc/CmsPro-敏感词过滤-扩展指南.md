@@ -1,6 +1,6 @@
 # CmsPro 敏感词过滤扩展指南
 
-> 版本：1.2.0 | 更新日期：2026-11-05
+> 版本：1.3.0 | 更新日期：2026-11-05
 > 适用应用：CmsproSensitivewords v1.0.0+
 
 ---
@@ -245,6 +245,7 @@ $hooks->registerAction('cmspro.sensitivewords.hit', function (array $hits, array
 
 | 版本 | 日期 | 更新人 | 说明 |
 |------|------|--------|------|
+| 1.3.0 | 2026-11-05 | 开发团队 | 修复 `SensitiveLibraryService::importFromFile()` 调用未定义的 `importFromZip()` 导致上传 zip 词库致命错误；zip 内词库文件定位放宽为 words.txt → 任意 .txt → .csv → .dic。调用方若曾捕获过该异常可移除兜底。**对外扩展接口（辅助函数/验证规则/Service/钩子）无变化** |
 | 1.2.0 | 2026-11-05 | 开发团队 | 本版本仅调整后台设置页 UI（Tab 分类），**对外扩展接口无变化**，接入方无需改动 |
 | 1.1.0 | 2026-11-05 | 开发团队 | 新增词库导出能力（`buildReleasePackage()`），导出与版本服务发布包同构的 zip，可直接上传 Versionsvr 发布；补充词库导出契约说明 |
 | 1.0.0 | 2026-11-05 | 开发团队 | 初始版本：四种扩展接口（辅助函数/验证规则/Service/钩子）+ HTTP API |

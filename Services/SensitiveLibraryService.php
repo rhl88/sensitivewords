@@ -125,6 +125,24 @@ class SensitiveLibraryService
     }
 
     /**
+     * 从 zip 包导入词库。
+     *
+     * 兼容三类 zip：本站/其他站点导出的词库包（内含 words.txt）、版本服务下载的
+     * 官方词库发布包、以及把 txt 词库随手压缩的包（回退匹配任意 .txt）。
+     *
+     * @param string $mode 冲突处理：skip/update/overwrite
+     * @return array{total:int,inserted:int,updated:int,skipped:int,categories:array<int,string>}
+     *
+     * @throws RuntimeException 包结构不合法或解析为空时
+     */
+    protected function importFromZip(string $zipPath, string $mode, int $defaultCategoryId): array
+    {
+        $content = $this->readWordsFromZip($zipPath);
+
+        return $this->importFromText($content, SensitiveWord::SOURCE_IMPORT, $mode, 'import', $defaultCategoryId);
+    }
+
+    /**
      * 从文本内容导入词库。
      *
      * @param string $content 词库文本
@@ -559,9 +577,12 @@ class SensitiveLibraryService
     }
 
     /**
-     * 解包 zip 并读取 words.txt（兼容包内多一层包裹目录）。
+     * 解包 zip 并读取词库文件（兼容包内多一层包裹目录）。
      *
-     * @throws RuntimeException 包结构不合法或缺少 words.txt 时
+     * 文件定位按优先级逐级放宽：words.txt → 任意 .txt → .csv → .dic，
+     * 使本站导出的发布包、版本服务下载的官方包、他人随手压缩的词库都能导入。
+     *
+     * @throws RuntimeException 包结构不合法或找不到词库文件时
      */
     protected function readWordsFromZip(string $zipPath): string
     {
@@ -591,16 +612,27 @@ class SensitiveLibraryService
             }
             $zip->close();
 
-            $candidates = array_merge(
-                glob($tempDir . '/' . self::WORDS_FILE) ?: [],
-                glob($tempDir . '/*/' . self::WORDS_FILE) ?: []
-            );
+            // 候选词库文件：优先 words.txt，其次任意 .txt/.csv/.dic（兼容他人导出的包）。
+            // 逐级放宽并只取第一个命中，meta.json 等非词库文件天然被扩展名过滤掉。
+            $patterns = [
+                $tempDir . '/' . self::WORDS_FILE,
+                $tempDir . '/*/' . self::WORDS_FILE,
+                $tempDir . '/*.txt',
+                $tempDir . '/*/*.txt',
+                $tempDir . '/*.csv',
+                $tempDir . '/*/*.csv',
+                $tempDir . '/*.dic',
+                $tempDir . '/*/*.dic',
+            ];
 
-            if ($candidates === []) {
-                throw new RuntimeException('词库包内未找到 words.txt');
+            foreach ($patterns as $pattern) {
+                $candidates = glob($pattern) ?: [];
+                if ($candidates !== []) {
+                    return $this->convertToUtf8((string) File::get($candidates[0]));
+                }
             }
 
-            return $this->convertToUtf8((string) File::get($candidates[0]));
+            throw new RuntimeException('词库包内未找到词库文件（words.txt 或任意 .txt/.csv/.dic）');
         } finally {
             File::deleteDirectory($tempDir);
         }

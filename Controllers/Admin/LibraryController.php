@@ -172,7 +172,8 @@ class LibraryController extends BaseController
             'status' => $validated['status'] ?? '',
         ], fn ($v) => $v !== '' && $v !== null);
 
-        $format = $validated['format'] ?? 'zip';
+        // 默认 txt：与前端推荐格式一致，导出物可直接被「导入词库」读回
+        $format = $validated['format'] ?? 'txt';
 
         try {
             if ($format === 'txt') {

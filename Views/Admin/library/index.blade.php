@@ -108,69 +108,117 @@
             </div>
         </div>
 
-        <!-- 导出词库 -->
+        <!-- 词库导入 / 导出 -->
         <div class="layui-card panel-col">
             <div class="layui-card-header">
-                <i class="fa fa-share-square-o"></i> 导出词库
-                <span class="layui-badge layui-bg-blue" style="margin-left:8px;">可供版本服务发布</span>
+                <i class="fa fa-exchange"></i> 词库导入 / 导出
             </div>
             <div class="layui-card-body">
-                <blockquote class="layui-elem-quote layui-quote-nm" style="font-size:13px;">
-                    导出<b>发布包（zip）</b>后，可直接到「版本服务 → 敏感词库」页上传发布，
-                    各站点即可在线同步——形成「本站整理词库 → 官方发布 → 全网同步」闭环。
-                </blockquote>
+                <div class="layui-tab layui-tab-brief" lay-filter="transferTab">
+                    <ul class="layui-tab-title">
+                        <li class="layui-this"><i class="fa fa-upload"></i> 导入词库</li>
+                        <li><i class="fa fa-download"></i> 导出词库</li>
+                    </ul>
+                    <div class="layui-tab-content">
 
-                <form class="layui-form" id="exportForm" style="margin-top:10px;">
-                    <div class="layui-form-item">
-                        <label class="layui-form-label" style="width:80px;">导出格式</label>
-                        <div class="layui-input-block" style="margin-left:110px;">
-                            <input type="radio" name="format" value="zip" title="发布包 zip（推荐）" checked>
-                            <input type="radio" name="format" value="txt" title="纯文本 txt">
+                        {{-- ══ 导入 ══════════════════════════════════════ --}}
+                        <div class="layui-tab-item layui-show">
+                            <blockquote class="layui-elem-quote layui-quote-nm" style="font-size:13px;">
+                                支持 <code>txt</code> / <code>csv</code> / <code>zip</code> 词库文件，
+                                本站导出的文件与<b>他人分享的词库包</b>均可直接导入。
+                                <br>每行一词，支持「词,动作,级别,分类」格式；GBK 编码自动转换，重复词条按所选策略处理。
+                            </blockquote>
+                            <form class="layui-form" id="importForm">
+                                <div class="layui-form-item">
+                                    <label class="layui-form-label" style="width:80px;">词库文件</label>
+                                    <div class="layui-input-block" style="margin-left:110px;">
+                                        <input type="file" id="importFile" accept=".txt,.csv,.zip,.dic" class="layui-input" style="padding:4px;">
+                                    </div>
+                                </div>
+                                <div class="layui-form-item">
+                                    <label class="layui-form-label" style="width:80px;">重复词条</label>
+                                    <div class="layui-input-inline" style="width:180px;">
+                                        <select id="importMode">
+                                            <option value="skip">跳过已存在（推荐）</option>
+                                            <option value="update">补齐空字段</option>
+                                            <option value="overwrite">覆盖已有词条</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="layui-form-item">
+                                    <label class="layui-form-label" style="width:80px;">默认分类</label>
+                                    <div class="layui-input-inline" style="width:180px;">
+                                        <select id="importCategory">
+                                            <option value="0">按文件内声明归类</option>
+                                        </select>
+                                    </div>
+                                    <div class="layui-form-mid layui-word-aux">文件未声明分类的词条归入此分类</div>
+                                </div>
+                                <div class="layui-form-item">
+                                    <div class="layui-input-block" style="margin-left:110px;">
+                                        <button type="button" class="layui-btn layui-btn-sm layui-btn-normal" id="btnImport" data-permission="cmspro.sensitivewords.word.import">
+                                            <i class="fa fa-upload"></i> 开始导入
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                            <div id="importMsg" style="font-size:13px;color:#999;"></div>
                         </div>
-                    </div>
-                    <div class="layui-form-item">
-                        <label class="layui-form-label" style="width:80px;">词条来源</label>
-                        <div class="layui-input-block" style="margin-left:110px;">
-                            <input type="checkbox" name="src_manual" title="手工添加" lay-skin="primary" checked>
-                            <input type="checkbox" name="src_import" title="文件导入" lay-skin="primary" checked>
-                            <input type="checkbox" name="src_library" title="在线词库" lay-skin="primary" checked>
-                            <input type="checkbox" name="src_builtin" title="内置词库" lay-skin="primary" checked>
+
+                        {{-- ══ 导出 ══════════════════════════════════════ --}}
+                        <div class="layui-tab-item">
+                            <blockquote class="layui-elem-quote layui-quote-nm" style="font-size:13px;">
+                                导出本站词库，便于<b>备份</b>或<b>分享给其他站点导入</b>。
+                                导出格式与导入格式一致，可直接被本页面「导入词库」读回。
+                            </blockquote>
+                            <form class="layui-form" id="exportForm" style="margin-top:10px;">
+                                <div class="layui-form-item">
+                                    <label class="layui-form-label" style="width:80px;">导出格式</label>
+                                    <div class="layui-input-block" style="margin-left:110px;">
+                                        <input type="radio" name="format" value="txt" title="纯文本 txt（推荐）" checked>
+                                        <input type="radio" name="format" value="zip" title="词库包 zip">
+                                    </div>
+                                </div>
+                                <div class="layui-form-item">
+                                    <label class="layui-form-label" style="width:80px;">词条来源</label>
+                                    <div class="layui-input-block" style="margin-left:110px;">
+                                        <input type="checkbox" name="src_manual" title="手工添加" lay-skin="primary" checked>
+                                        <input type="checkbox" name="src_import" title="文件导入" lay-skin="primary" checked>
+                                        <input type="checkbox" name="src_library" title="在线词库" lay-skin="primary" checked>
+                                        <input type="checkbox" name="src_builtin" title="内置词库" lay-skin="primary" checked>
+                                    </div>
+                                </div>
+                                <div class="layui-form-item">
+                                    <label class="layui-form-label" style="width:80px;">所属分类</label>
+                                    <div class="layui-input-inline" style="width:180px;">
+                                        <select name="category_id" id="exportCategory">
+                                            <option value="">全部分类</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="layui-form-item">
+                                    <label class="layui-form-label" style="width:80px;">词条状态</label>
+                                    <div class="layui-input-inline" style="width:180px;">
+                                        <select name="status">
+                                            <option value="1">仅启用词条（推荐）</option>
+                                            <option value="">全部词条</option>
+                                            <option value="0">仅禁用词条</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="layui-form-item">
+                                    <div class="layui-input-block" style="margin-left:110px;">
+                                        <button type="button" class="layui-btn layui-btn-sm layui-btn-normal" id="btnExport" data-permission="cmspro.sensitivewords.word.import">
+                                            <i class="fa fa-download"></i> 导出词库
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                            <div id="exportMsg" style="font-size:13px;color:#999;"></div>
                         </div>
+
                     </div>
-                    <div class="layui-form-item">
-                        <label class="layui-form-label" style="width:80px;">所属分类</label>
-                        <div class="layui-input-inline" style="width:180px;">
-                            <select name="category_id" id="exportCategory">
-                                <option value="">全部分类</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="layui-form-item">
-                        <label class="layui-form-label" style="width:80px;">词条状态</label>
-                        <div class="layui-input-inline" style="width:180px;">
-                            <select name="status">
-                                <option value="1">仅启用词条（推荐）</option>
-                                <option value="">全部词条</option>
-                                <option value="0">仅禁用词条</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="layui-form-item" id="versionRow">
-                        <label class="layui-form-label" style="width:80px;">版本号</label>
-                        <div class="layui-input-inline" style="width:180px;">
-                            <input type="text" name="version" id="exportVersion" placeholder="留空自动生成" class="layui-input" autocomplete="off" maxlength="32">
-                        </div>
-                        <div class="layui-form-mid layui-word-aux" id="versionHint">留空按导出时间生成 YYYYMMDDHHMMSS</div>
-                    </div>
-                    <div class="layui-form-item">
-                        <div class="layui-input-block" style="margin-left:110px;">
-                            <button type="button" class="layui-btn layui-btn-sm layui-btn-normal" id="btnExport" data-permission="cmspro.sensitivewords.word.import">
-                                <i class="fa fa-download"></i> 导出词库
-                            </button>
-                        </div>
-                    </div>
-                </form>
-                <div id="exportMsg" style="font-size:13px;color:#999;"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -179,8 +227,8 @@
 <script src="{{ asset('CmsProUi/component/layui/layui.js') }}"></script>
 <script src="{{ asset('CmsProUi/component/pear/pear.js') }}"></script>
 <script>
-layui.use(['layer', 'form', 'jquery'], function () {
-    var layer = layui.layer, form = layui.form, $ = layui.jquery;
+layui.use(['layer', 'form', 'element', 'jquery'], function () {
+    var layer = layui.layer, form = layui.form, element = layui.element, $ = layui.jquery;
 
     var API = {
         info: '/admin/cmspro/sensitivewords/api/library/info',
@@ -190,6 +238,7 @@ layui.use(['layer', 'form', 'jquery'], function () {
         clearSource: '/admin/cmspro/sensitivewords/api/library/clear-source',
         rebuild: '/admin/cmspro/sensitivewords/api/settings/rebuild-dictionary',
         exportUrl: '/admin/cmspro/sensitivewords/api/library/export',
+        importFile: '/admin/cmspro/sensitivewords/api/words/import-file',
         categoryOptions: '/admin/cmspro/sensitivewords/api/category-options'
     };
 
@@ -311,23 +360,67 @@ layui.use(['layer', 'form', 'jquery'], function () {
         });
     });
 
-    // ── 导出词库 ──────────────────────────────────────────────
-    // 加载分类下拉
+    // ── 导入 / 导出词库 ────────────────────────────────────────
+    // 分类下拉：导出用（全部分类）与导入用（默认分类）
     $.get(API.categoryOptions, function (res) {
         if (res.code === 0 && res.data) {
-            var html = '<option value="">全部分类</option>';
+            var exportHtml = '<option value="">全部分类</option>';
+            var importHtml = '<option value="0">按文件内声明归类</option>';
             res.data.forEach(function (c) {
-                html += '<option value="' + c.id + '">' + c.name + '</option>';
+                exportHtml += '<option value="' + c.id + '">' + c.name + '</option>';
+                importHtml += '<option value="' + c.id + '">' + c.name + '</option>';
             });
-            $('#exportCategory').html(html);
+            $('#exportCategory').html(exportHtml);
+            $('#importCategory').html(importHtml);
             form.render('select');
         }
     });
 
-    // 格式切换：txt 无版本号概念，隐藏版本行
-    form.on('radio()', function () {
-        var fmt = $('#exportForm input[name="format"]:checked').val();
-        if (fmt === 'txt') { $('#versionRow').hide(); } else { $('#versionRow').show(); }
+    // 切换 Tab 后重渲染：隐藏面板内的 select/radio 首次渲染宽度为 0，切到该面板后需重新渲染才正常显示
+    element.on('tab(transferTab)', function () {
+        form.render();
+    });
+
+    // 导入词库（本站导出的文件与他人分享的词库包通用）
+    $('#btnImport').on('click', function () {
+        var fileInput = $('#importFile')[0];
+        if (!fileInput.files || !fileInput.files[0]) {
+            layer.msg('请选择词库文件', { icon: 2 });
+            return;
+        }
+
+        var formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        formData.append('mode', $('#importMode').val());
+        var categoryId = $('#importCategory').val();
+        if (categoryId && categoryId !== '0') formData.append('category_id', categoryId);
+
+        var loadIdx = layer.load(1, { content: '正在解析并导入...' });
+        $.ajax({
+            url: API.importFile, type: 'POST', data: formData,
+            processData: false, contentType: false,
+            success: function (res) {
+                layer.close(loadIdx);
+                if (res.code === 0) {
+                    var d = res.data || {};
+                    $('#importMsg').html('<span style="color:#5fb878;"><i class="fa fa-check"></i> '
+                        + res.message + '（共 ' + (d.total || 0) + ' 条）</span>');
+                    layer.msg(res.message, { icon: 1 });
+                    $('#importFile').val('');
+                    refreshInfo();
+                } else {
+                    $('#importMsg').html('<span style="color:#ff5722;"><i class="fa fa-times"></i> ' + res.message + '</span>');
+                    layer.msg(res.message, { icon: 2 });
+                }
+            },
+            error: function (xhr) {
+                layer.close(loadIdx);
+                var msg = '请求失败';
+                try { msg = (JSON.parse(xhr.responseText) || {}).message || msg; } catch (e) {}
+                $('#importMsg').html('<span style="color:#ff5722;"><i class="fa fa-times"></i> ' + msg + '</span>');
+                layer.msg(msg, { icon: 2 });
+            }
+        });
     });
 
     $('#btnExport').on('click', function () {
@@ -341,17 +434,13 @@ layui.use(['layer', 'form', 'jquery'], function () {
             return;
         }
 
-        var fmt = $('#exportForm input[name="format"]:checked').val() || 'zip';
+        var fmt = $('#exportForm input[name="format"]:checked').val() || 'txt';
         var params = {
             format: fmt,
             sources: sources.join(','),
             category_id: $('#exportForm select[name="category_id"]').val() || '',
             status: $('#exportForm select[name="status"]').val() || ''
         };
-        if (fmt === 'zip') {
-            var v = $.trim($('#exportVersion').val());
-            if (v) params.version = v;
-        }
 
         // 组装查询串，用隐藏 iframe 触发下载（避免整页跳转）
         var qs = $.map(params, function (val, key) {
@@ -364,11 +453,11 @@ layui.use(['layer', 'form', 'jquery'], function () {
         $iframe.attr('src', API.exportUrl + '?' + qs);
         $('body').append($iframe);
 
-        // 下载为浏览器行为，无回调；提示用户稍候并说明发布包用途
+        // 下载为浏览器行为，无回调；提示用户稍候
         setTimeout(function () {
-            $('#exportMsg').html(fmt === 'zip'
-                ? '已触发下载：发布包 zip（含 words.txt + meta.json），可到「版本服务 → 敏感词库」页上传发布。'
-                : '已触发下载：纯文本词库 txt，可直接导入本应用或其他站点。');
+            $('#exportMsg').html('<span style="color:#5fb878;"><i class="fa fa-check"></i> 已触发下载：'
+                + (fmt === 'zip' ? '词库包 zip' : '纯文本词库 txt')
+                + '，可直接在本页「导入词库」读回，或分享给其他站点导入。</span>');
             $iframe.remove();
         }, 1500);
     });
