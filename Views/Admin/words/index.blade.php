@@ -10,30 +10,42 @@
     <link rel="stylesheet" href="{{ asset('Admin/css/variables.css') }}">
     <link rel="stylesheet" href="{{ asset('Admin/css/reset.css') }}">
     @include('admin.partials.permission-script')
+    <style>
+        /* 搜索栏：inline 横排 + 固定控件宽度。
+           不用栅格列（layui-col-md*）：列宽随屏幕拉伸而控件宽度固定，
+           列尾会留出随屏幕变宽而增大的空白，即各筛选项之间的大间隔 */
+        .sw-search-bar { padding: 10px 5px 0; }
+        .sw-search-bar .layui-inline { margin: 0 14px 10px 0; vertical-align: top; }
+        .sw-search-bar .layui-form-label { width: auto; padding: 9px 8px 9px 0; }
+        .sw-search-bar .layui-input-inline { vertical-align: top; }
+        .sw-w-keyword { width: 180px; }
+        .sw-w-select { width: 130px; }
+        .sw-search-actions { margin-left: 4px; }
+    </style>
 </head>
 <body>
 <!-- 搜索卡 -->
 <div class="layui-card">
     <div class="layui-card-body">
         <form class="layui-form" id="searchForm">
-            <div class="layui-form-item layui-row layui-col-space15">
-                <div class="layui-col-md3">
+            <div class="sw-search-bar">
+                <div class="layui-inline">
                     <label class="layui-form-label">关键词</label>
-                    <div class="layui-input-block">
+                    <div class="layui-input-inline sw-w-keyword">
                         <input type="text" name="keyword" placeholder="敏感词内容" class="layui-input" autocomplete="off">
                     </div>
                 </div>
-                <div class="layui-col-md2">
+                <div class="layui-inline">
                     <label class="layui-form-label">分类</label>
-                    <div class="layui-input-block">
+                    <div class="layui-input-inline sw-w-select">
                         <select name="category_id" id="searchCategory">
                             <option value="">全部</option>
                         </select>
                     </div>
                 </div>
-                <div class="layui-col-md2">
+                <div class="layui-inline">
                     <label class="layui-form-label">动作</label>
-                    <div class="layui-input-block">
+                    <div class="layui-input-inline sw-w-select">
                         <select name="action">
                             <option value="">全部</option>
                             <option value="block">禁止</option>
@@ -43,9 +55,9 @@
                         </select>
                     </div>
                 </div>
-                <div class="layui-col-md2">
+                <div class="layui-inline">
                     <label class="layui-form-label">来源</label>
-                    <div class="layui-input-block">
+                    <div class="layui-input-inline sw-w-select">
                         <select name="source">
                             <option value="">全部</option>
                             <option value="manual">手工添加</option>
@@ -55,9 +67,9 @@
                         </select>
                     </div>
                 </div>
-                <div class="layui-col-md2">
+                <div class="layui-inline">
                     <label class="layui-form-label">状态</label>
-                    <div class="layui-input-block">
+                    <div class="layui-input-inline sw-w-select">
                         <select name="status">
                             <option value="">全部</option>
                             <option value="1">启用</option>
@@ -65,7 +77,7 @@
                         </select>
                     </div>
                 </div>
-                <div class="layui-col-md1" style="text-align:right; padding-top:5px;">
+                <div class="layui-inline sw-search-actions">
                     <button type="button" class="layui-btn" id="btnSearch"><i class="fa fa-search"></i></button>
                     <button type="reset" class="layui-btn layui-btn-primary" id="btnReset">重置</button>
                 </div>
