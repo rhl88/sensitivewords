@@ -1,7 +1,7 @@
 # 敏感词过滤 · 使用指南
 
-> 版本：1.4.2 | 更新日期：2026-11-06
-> 应用版本：1.4.2 | 应用 ID：`cmspro.sensitivewords`
+> 版本：1.4.3 | 更新日期：2026-11-06
+> 应用版本：1.4.3 | 应用 ID：`cmspro.sensitivewords`
 
 > 本指南帮助使用者快速安装、配置、运行和验证「敏感词过滤」应用。
 
@@ -108,6 +108,18 @@ curl -X POST https://your-domain/api/cmspro/sensitivewords/check \
 1. 词条管理页新增词条「测试违规词」，动作选「禁止」
 2. 点工具栏「在线检测」，输入含「测试违规词」的文本 → 应显示命中且 passed=false
 3. 「命中日志」页应出现该次检测记录（scene=admin.test）
+
+### 4.4 测试数据填充（开发 / 验收）
+
+```bash
+# 填充测试数据：自定义分类（code 前缀 demo_）、手工词条（词名前缀 【测试】）、近 7 天命中日志
+php artisan cmspro:sensitivewords:seed-testdata
+
+# 精确回滚：按上述特征前缀删除，不影响真实词库与日志
+php artisan cmspro:sensitivewords:seed-testdata --clean
+```
+
+命令执行后自动重建词典缓存。为避免重复堆积，检测到已存在测试词条时会拒绝填充并提示先执行 `--clean`。
 
 ---
 
@@ -268,6 +280,7 @@ CmsproSensitivewords/
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| 1.4.3 | 2026-11-06 | 修复「批量导入词条」弹窗内 3 个下拉框（默认动作/重复处理×2）不被 Layui 渲染的问题：弹窗模板根节点原为普通 `<div>`，而 Layui `form.render(type, filter)` 只渲染 `.layui-form` 容器内的元素，`success` 回调又误把模板 ID 当作 lay-filter 传入（`form.render(null,'importTpl')` 空转）。修复为根节点加 `class="layui-form" lay-filter="importForm"` 并改调 `form.render(null,'importForm')`。新增 WordPageTest 5 个页面级回归用例；新增测试数据填充命令 `cmspro:sensitivewords:seed-testdata`（支持 `--clean`，见 4.4） |
 | 1.4.2 | 2026-11-06 | **修复严重缺陷**：`checkRemoteLibrary()` 用 `$base + ['available'=>true, ...]` 返回成功结果，但 PHP 数组 `+` 运算符「左键优先」，`$base` 已含全部键致右侧补丁被整体丢弃——无论远程版本服务多正常，该方法成功路径永远返回 `available=false`，`syncRemoteLibrary()` 随即抛「版本服务不可用」，「检查更新 / 立即同步」接口返回 **50002**（实连 v5.cmspro.cn 已发布 192 条词库仍报不可用）。5 处 `$base +` 改用 `array_merge()`。新增 RemoteLibrarySyncTest 9 个用例（Http::fake 覆盖成功/HTTP错误/无发布/连接失败/校验和/端到端六路径）；此前该链路零测试覆盖故缺陷长期潜伏 |
 | 1.4.1 | 2026-11-06 | **修复严重缺陷**：`normalizeInputWord()` 用 `trim($word, "\"'“”‘’ \t")` 去引号，而 trim 第二参数是**字节集合**——中文弯引号被拆成字节 `E2 80 9C/9D/98/99` 混入，导致尾字节落在 `{80,98,99,9C,9D}` 的汉字被咬掉一字节产生非法 UTF-8（内置词库 192 条中 **12 条**受害：传销/杀猪盘/成人网站/黄色网站/庞氏骗局/资金盘/高薪招聘/厂家直销/断子绝孙/智障/智障操作/死开）。后果链条：写库触发 MySQL 1366 → 异常 message 内嵌原始坏字节 → `json_encode` 失败 → 「导入内置词库」接口返回 500「Malformed UTF-8 characters」**掩盖真实根因**。改用带 `/u` 的 Unicode 正则只剥离首尾边界；并在 Service 异常包装处净化 `getMessage()`，确保错误信息始终可读可编码 |
 | 1.4.0 | 2026-11-05 | 内置词库由 44 条扩充至 **192 条**（辱骂攻击 50 / 广告推广 41 / 诈骗违禁 69 / 色情低俗 32），按「明确违法 block / 不雅 replace / 高误伤 warn」分级；导入改为**按词库文件指纹增量补齐**，升级后自动补入新词且保留管理员对既有词条的手工调整（旧实现以「存在 builtin 词条」为跳过条件，扩充对已安装站点无效）；批量导入消除逐条查库的 N+1；涉政类按原设计不内置具体词条 |

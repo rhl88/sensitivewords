@@ -1,6 +1,6 @@
 # CmsPro 敏感词过滤扩展指南
 
-> 版本：1.4.2 | 更新日期：2026-11-06
+> 版本：1.4.3 | 更新日期：2026-11-06
 > 适用应用：CmsproSensitivewords v1.0.0+
 
 ---
@@ -247,6 +247,7 @@ $hooks->registerAction('cmspro.sensitivewords.hit', function (array $hits, array
 
 | 版本 | 日期 | 更新人 | 说明 |
 |------|------|--------|------|
+| 1.4.3 | 2026-11-06 | 开发团队 | 修复「批量导入词条」弹窗内下拉框不被 Layui 渲染的缺陷（模板根节点补 `.layui-form` 容器 + `form.render` 传正确 lay-filter）。纯后台视图层修复，**对外扩展接口（辅助函数/验证规则/Service/钩子/HTTP API）无变化**，接入方无需改动 |
 | 1.4.2 | 2026-11-06 | 开发团队 | 修复 `checkRemoteLibrary()` 因 PHP 数组 `+` 左键优先致成功结果被丢弃的缺陷（成功路径永远返回 `available=false`）。**若接入方通过 Service 调用 `checkRemoteLibrary()` 判断在线词库可用性，修复前会误判为不可用**；`syncRemoteLibrary()` 同受影响（误抛「版本服务不可用」）。改用 `array_merge()`，返回值结构不变。**对外扩展接口无变化** |
 | 1.4.1 | 2026-11-06 | 开发团队 | 新增辅助函数 `cmspro_sensitivewords_sanitize_text()`：把可能含非法字节的文本净化为合法 UTF-8（非法序列替换为占位字符、可读上下文保留）。**接入方若把数据库异常 message 拼进 JSON 响应，建议调用它**——否则 `json_encode` 失败会使接口返回 500「Malformed UTF-8」，掩盖真实根因。本次同时修复词条净化用 `trim()` 字节集合截断汉字的缺陷（详见使用指南 1.4.1） |
 | 1.4.0 | 2026-11-05 | 开发团队 | 内置词库扩充至 192 条；`importBuiltinWords()` 由「存在 builtin 词条即跳过」改为**按词库文件 SHA-256 指纹增量补齐**（skip 模式保留管理员对既有词条的调整），`Install::upgrade()` 补调该方法使扩充对已安装站点生效；`importRows()` 改为分批 `whereIn` 预查已存在键，消除逐条查库的 N+1。**对外扩展接口无变化** |

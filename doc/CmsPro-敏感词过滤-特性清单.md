@@ -1,7 +1,7 @@
 # 敏感词过滤 · 特性清单
 
-> 版本：1.4.2 | 更新日期：2026-11-06
-> 应用版本：1.4.2 | 应用 ID：`cmspro.sensitivewords`
+> 版本：1.4.3 | 更新日期：2026-11-06
+> 应用版本：1.4.3 | 应用 ID：`cmspro.sensitivewords`
 
 > 本文档系统整理本应用覆盖的 CmsPro v5 框架特性，并标注对应实现位置，作为应用开发与二次开发的官方参考。
 
@@ -157,13 +157,15 @@
 |---|------|------|---------|
 | 80 | 应用级测试 | 单元 + 功能测试放 `Tests/`（命名空间 `App\Apps\CmsproSensitivewords\Tests`），不入框架 tests/ | `Tests/` |
 | 81 | RefreshDatabase 隔离 | sqlite :memory:，不污染真实库；tearDown 清理 storage 词典缓存 | `Tests/SensitivewordsTestCase.php` |
-| 82 | 场景全覆盖 | 正常/异常/边界/权限/校验失败；160 个测试全部通过 | `Tests/Unit` + `Tests/Feature` |
+| 82 | 场景全覆盖 | 正常/异常/边界/权限/校验失败；177 个测试全部通过 | `Tests/Unit` + `Tests/Feature` |
 | 83 | 跨应用契约测试 | 串联验证「本站导出发布包 → Versionsvr 解析发布 → 产物可回同步」闭环，守护包格式契约 | `Tests/Feature/CrossAppReleaseContractTest.php` |
+| 84 | 测试数据填充命令 | `php artisan cmspro:sensitivewords:seed-testdata` 填充自定义分类/手工词条/命中日志，`--clean` 按特征前缀精确回滚；已有测试数据时拒绝重复填充 | `Console/Commands/SeedTestDataCommand.php` |
 
 ## 十五、版本历史
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| 1.4.3 | 2026-11-06 | 修复「批量导入词条」弹窗内 3 个下拉框不被 Layui 渲染的缺陷：弹窗模板根节点缺 `.layui-form` 包裹，而 `form.render(type,filter)` 仅渲染 `.layui-form` 容器内元素；`success` 回调又误把模板 ID 当 lay-filter 传入而空转。改为根节点加 `class="layui-form" lay-filter="importForm"` 并调 `form.render(null,'importForm')`；新增 WordPageTest 5 个页面级回归用例；新增测试数据填充命令 `cmspro:sensitivewords:seed-testdata`（支持 `--clean`）；测试增至 177 个 |
 | 1.4.2 | 2026-11-06 | 修复 `checkRemoteLibrary()` 用 `$base + [...]` 返回成功结果、因 PHP 数组 `+` 左键优先致补丁被丢弃的严重缺陷（成功路径永远 `available=false`，在线词库「检查更新/立即同步」误报 50002「版本服务不可用」）；5 处改用 `array_merge()`；新增 RemoteLibrarySyncTest 9 个用例；测试增至 160 个 |
 | 1.4.1 | 2026-11-06 | 修复 `trim()` 字节集合剥离多字节汉字的严重缺陷（内置词库 12 条被截断为非法 UTF-8，致导入接口 500）；改用 `/u` Unicode 正则；新增 `cmspro_sensitivewords_sanitize_text()` 在 Service 异常包装边界净化坏字节，避免可读业务错误退化为 500 并掩盖根因；新增 WordInputSanitizeTest 13 个用例（含接口级端到端）；测试增至 151 个 |
 | 1.4.0 | 2026-11-05 | 内置词库扩充至 192 条（四类分级动作）；导入改为按文件指纹增量补齐（升级对已安装站点生效且不覆盖手工调整）；批量导入消除 N+1（分批 whereIn 预查）；新增 BuiltinLibraryTest 16 个用例（词库合法性/归一化冲突/增量语义/查询次数）；测试增至 138 个 |
