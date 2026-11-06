@@ -159,12 +159,8 @@
 <!-- 操作列模板 -->
 <script type="text/html" id="operationTpl">
 @verbatim
-<a class="layui-btn layui-btn-xs" lay-event="edit" data-permission="cmspro.sensitivewords.word.edit">
-    <i class="layui-icon layui-icon-edit"></i> 编辑
-</a>
-<a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del" data-permission="cmspro.sensitivewords.word.delete">
-    <i class="layui-icon layui-icon-delete"></i> 删除
-</a>
+<a class="layui-btn layui-btn-xs" lay-event="edit" data-permission="cmspro.sensitivewords.word.edit">编辑</a>
+<a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del" data-permission="cmspro.sensitivewords.word.delete">删除</a>
 @endverbatim
 </script>
 
@@ -303,7 +299,7 @@ layui.use(['table', 'form', 'layer', 'element', 'jquery'], function () {
             { title: '命中', field: 'hit_count', width: 80, align: 'center' },
             { title: '状态', field: 'status', width: 100, align: 'center', templet: '#statusTpl' },
             { title: '创建时间', field: 'create_time', width: 170, align: 'center' },
-            { title: '操作', toolbar: '#operationTpl', width: 150, align: 'center', fixed: 'right' }
+            { title: '操作', toolbar: '#operationTpl', width: 120, align: 'center', fixed: 'right' }
         ]],
         parseData: function (res) {
             return { code: res.code === 0 ? 0 : res.code, msg: res.msg || res.message, count: res.count, data: res.data };
