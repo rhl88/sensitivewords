@@ -1,6 +1,6 @@
 # 敏感词过滤 应用文档
 
-> 应用 ID：`cmspro.sensitivewords` | 文档版本：1.4.0 | 应用版本：1.4.0
+> 应用 ID：`cmspro.sensitivewords` | 文档版本：1.4.1 | 应用版本：1.4.1
 > 依赖：PHP >= 8.3，CmsPro >= 5.0.0（可选弱依赖：versionsvr，用于在线词库更新与词库发布）
 > 官方地址：https://www.cmspro.cn/apps/cmspro.sensitivewords
 
@@ -41,7 +41,7 @@ CmsproSensitivewords/
 ├── Rules/SensitiveWordRule.php   # Laravel ValidationRule 对象规则
 ├── Storage/base_words.txt        # 内置常见词库（随应用分发，192 条，升级按指纹增量补齐）
 ├── Views/Admin/                  # words/categories/hit-logs/library/settings 视图
-├── Tests/                        # 应用测试（138 个用例：引擎单测 + 服务/接口/规则/助手/词库导入导出/内置词库/设置页 + 跨应用契约测试）
+├── Tests/                        # 应用测试（151 个用例：引擎单测 + 服务/接口/规则/助手/词库导入导出/内置词库/设置页 + 跨应用契约测试）
 └── doc/                          # 三类应用文档（特性清单/使用指南/扩展指南）
 ```
 

@@ -1,6 +1,6 @@
 # CmsPro 敏感词过滤扩展指南
 
-> 版本：1.4.0 | 更新日期：2026-11-05
+> 版本：1.4.1 | 更新日期：2026-11-06
 > 适用应用：CmsproSensitivewords v1.0.0+
 
 ---
@@ -45,10 +45,12 @@ if (function_exists('cmspro_sensitivewords_available') && cmspro_sensitivewords_
 | `cmspro_sensitivewords_check` | `(string $text, ?string $scene = null, ?string $sourceApp = null)` | `array` 命中详情 |
 | `cmspro_sensitivewords_filter_array` | `(array $data, array $fields = [], ?string $scene = null, ?string $sourceApp = null)` | `array` 过滤后数组 |
 | `cmspro_sensitivewords_available` | `()` | `bool` 能力是否可用 |
+| `cmspro_sensitivewords_sanitize_text` | `(?string $text, int $maxLength = 500)` | `string` 合法 UTF-8 文本 |
 
 参数说明：
 - `$scene`：业务场景标识（写入命中日志，建议用 `{模块}.{动作}` 格式，如 `comment.create`）
 - `$sourceApp`：调用方应用 ID（写入命中日志，如 `cmspro.blog`），便于日志页按来源筛选
+- `cmspro_sensitivewords_sanitize_text`：把可能含非法字节的文本净化为合法 UTF-8，非法序列替换为占位字符、可读上下文完整保留。**接入方若把数据库异常 message 拼进 JSON 响应，建议先用它净化**——否则 `json_encode` 会失败，接口退化成 500「Malformed UTF-8 characters」，把可读的业务错误与真实根因一起掩盖
 
 ### 3.2 check 返回结构
 
@@ -245,6 +247,7 @@ $hooks->registerAction('cmspro.sensitivewords.hit', function (array $hits, array
 
 | 版本 | 日期 | 更新人 | 说明 |
 |------|------|--------|------|
+| 1.4.1 | 2026-11-06 | 开发团队 | 新增辅助函数 `cmspro_sensitivewords_sanitize_text()`：把可能含非法字节的文本净化为合法 UTF-8（非法序列替换为占位字符、可读上下文保留）。**接入方若把数据库异常 message 拼进 JSON 响应，建议调用它**——否则 `json_encode` 失败会使接口返回 500「Malformed UTF-8」，掩盖真实根因。本次同时修复词条净化用 `trim()` 字节集合截断汉字的缺陷（详见使用指南 1.4.1） |
 | 1.4.0 | 2026-11-05 | 开发团队 | 内置词库扩充至 192 条；`importBuiltinWords()` 由「存在 builtin 词条即跳过」改为**按词库文件 SHA-256 指纹增量补齐**（skip 模式保留管理员对既有词条的调整），`Install::upgrade()` 补调该方法使扩充对已安装站点生效；`importRows()` 改为分批 `whereIn` 预查已存在键，消除逐条查库的 N+1。**对外扩展接口无变化** |
 | 1.3.0 | 2026-11-05 | 开发团队 | 修复 `SensitiveLibraryService::importFromFile()` 调用未定义的 `importFromZip()` 导致上传 zip 词库致命错误；zip 内词库文件定位放宽为 words.txt → 任意 .txt → .csv → .dic。调用方若曾捕获过该异常可移除兜底。**对外扩展接口（辅助函数/验证规则/Service/钩子）无变化** |
 | 1.2.0 | 2026-11-05 | 开发团队 | 本版本仅调整后台设置页 UI（Tab 分类），**对外扩展接口无变化**，接入方无需改动 |

@@ -2,7 +2,7 @@
     "id": "cmspro.sensitivewords",
     "name": "敏感词过滤",
     "description": "通用敏感词过滤应用，基于 DFA 字典树引擎提供检测、替换、拦截能力，向任意应用开放辅助函数、Service、Filter 钩子与验证规则四种扩展方式，支持词库分类管理、批量导入导出、命中日志与在线词库更新。",
-    "version": "1.4.0",
+    "version": "1.4.1",
     "author": "CmsPro",
     "author_url": "https://www.cmspro.cn",
     "icon": "fa fa-filter",

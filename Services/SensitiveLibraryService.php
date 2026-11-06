@@ -486,7 +486,7 @@ class SensitiveLibraryService
         } catch (Throwable $e) {
             Log::warning('[cmspro.sensitivewords] 词库版本检查失败', ['error' => $e->getMessage()]);
 
-            return $base + ['message' => '无法连接版本服务：' . $e->getMessage()];
+            return $base + ['message' => '无法连接版本服务：' . cmspro_sensitivewords_sanitize_text($e->getMessage())];
         }
     }
 
@@ -571,7 +571,7 @@ class SensitiveLibraryService
                 @unlink($zipPath);
             }
 
-            throw $e instanceof RuntimeException ? $e : new RuntimeException('词库同步失败：' . $e->getMessage());
+            throw $e instanceof RuntimeException ? $e : new RuntimeException('词库同步失败：' . cmspro_sensitivewords_sanitize_text($e->getMessage()));
         }
     }
 

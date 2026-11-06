@@ -99,6 +99,44 @@ if (! function_exists('cmspro_sensitivewords_available')) {
     }
 }
 
+if (! function_exists('cmspro_sensitivewords_sanitize_text')) {
+    /**
+     * 净化文本为合法 UTF-8，用于安全写入 JSON 响应
+     *
+     * 必要性：数据库异常（如 MySQL 1366 Incorrect string value）的 message 会内嵌
+     * **原始非法字节**，直接拼进 ApiResponse 后，json_encode 返回 false，
+     * Symfony JsonResponse 抛 InvalidArgumentException，接口退化成
+     * 500「Malformed UTF-8 characters」——可读的业务错误被掩盖，
+     * 真实根因（哪条词条、哪个字段）反而丢失，排查成本极高。
+     *
+     * 策略：非法序列替换为占位字符（mb_convert_encoding 的 UTF-8→UTF-8 行为），
+     * 可读上下文（错误码、SQL 片段、列名）完整保留，便于定位问题。
+     * 已合法的文本原样返回，不做无谓转换。
+     *
+     * @param string|null $text      待净化文本（null 按空串处理）
+     * @param int         $maxLength 最大长度，超出截断（异常堆栈拼接可能很长）
+     * @return string 合法 UTF-8 文本
+     */
+    function cmspro_sensitivewords_sanitize_text(?string $text, int $maxLength = 500): string
+    {
+        $text = (string) $text;
+
+        if ($text === '') {
+            return '';
+        }
+
+        if (! mb_check_encoding($text, 'UTF-8')) {
+            $converted = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
+            // 转换失败（极端情况）时退化为丢弃全部控制字符
+            $text = is_string($converted) && mb_check_encoding($converted, 'UTF-8')
+                ? $converted
+                : (string) preg_replace('/[^\P{C}]+/u', '', $text);
+        }
+
+        return mb_substr($text, 0, max(1, $maxLength));
+    }
+}
+
 if (! function_exists('cmspro_sensitivewords_filter')) {
     /**
      * 过滤文本中的敏感词（替换为掩码字符）

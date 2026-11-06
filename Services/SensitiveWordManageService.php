@@ -389,7 +389,10 @@ class SensitiveWordManageService
             DB::rollBack();
             Log::error('[cmspro.sensitivewords] 词条导入失败', ['error' => $e->getMessage()]);
 
-            throw new RuntimeException('词条导入失败：' . $e->getMessage());
+            // getMessage() 必须净化后再拼接：数据库异常（如 MySQL 1366）的 message
+            // 会内嵌原始非法字节，直接拼进异常 message 会一路传到 ApiResponse，
+            // 使 json_encode 失败、接口返回 500「Malformed UTF-8」，掩盖真实根因。
+            throw new RuntimeException('词条导入失败：' . cmspro_sensitivewords_sanitize_text($e->getMessage()));
         }
 
         $this->refreshAllCategoryCounts();
@@ -740,8 +743,17 @@ class SensitiveWordManageService
     {
         $word = trim((string) $word);
         $word = preg_replace('/^\xEF\xBB\xBF/', '', $word) ?? $word;
-        // 去除首尾的引号（从表格粘贴常带引号）
-        $word = trim($word, "\"'“”‘’ \t");
+
+        // 去除首尾的引号（从表格粘贴常带引号）。
+        //
+        // 必须用带 /u 的正则而非 trim($word, "\"'“”‘’ \t")：trim() 的第二参数是
+        // 「字节集合」，中文弯引号 U+201C/201D/2018/2019 会被拆成字节
+        // E2 80 9C / E2 80 9D / E2 80 98 / E2 80 99 混入集合，导致任何尾字节落在
+        // {80,98,99,9C,9D} 的汉字被咬掉一个字节（智障→E699BAE99A、传销→E4BCA0E994），
+        // 产生非法 UTF-8：写库触发 MySQL 1366，异常 message 又内嵌坏字节，
+        // 最终使 json_encode 失败、接口返回「Malformed UTF-8」掩盖真实根因。
+        // 正则加 /u 后字符类按「字符」而非「字节」匹配，只剥离首尾边界不触及词内。
+        $word = preg_replace('/^[\s\'"“”‘’]+|[\s\'"“”‘’]+$/u', '', $word) ?? $word;
 
         if ($word === '') {
             throw new RuntimeException('敏感词不能为空');
