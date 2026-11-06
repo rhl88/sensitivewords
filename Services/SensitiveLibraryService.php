@@ -454,25 +454,25 @@ class SensitiveLibraryService
         ];
 
         if (! $this->remoteEnabled()) {
-            return $base + ['message' => '在线词库更新已在「过滤设置 → 词库设置」中关闭'];
+            return array_merge($base, ['message' => '在线词库更新已在「过滤设置 → 词库设置」中关闭']);
         }
 
         try {
             $response = $this->httpClient()->get($this->apiUrl('/api/versionsvr/sensitive-words/latest'));
 
             if (! $response->successful()) {
-                return $base + ['message' => '版本服务返回异常（HTTP ' . $response->status() . '）'];
+                return array_merge($base, ['message' => '版本服务返回异常（HTTP ' . $response->status() . '）']);
             }
 
             $payload = $response->json();
             if ((int) ($payload['code'] ?? -1) !== 0 || empty($payload['data'])) {
-                return $base + ['message' => (string) ($payload['message'] ?? '暂无已发布的官方词库')];
+                return array_merge($base, ['message' => (string) ($payload['message'] ?? '暂无已发布的官方词库')]);
             }
 
             $data = $payload['data'];
             $version = (string) ($data['version'] ?? '');
 
-            return $base + [
+            return array_merge($base, [
                 'available' => true,
                 'message' => 'ok',
                 'version' => $version,
@@ -482,11 +482,11 @@ class SensitiveLibraryService
                 'release_time' => (string) ($data['release_time'] ?? ''),
                 'changelog' => (string) ($data['changelog'] ?? ''),
                 'need_update' => $version !== '' && $version !== $localVersion,
-            ];
+            ]);
         } catch (Throwable $e) {
             Log::warning('[cmspro.sensitivewords] 词库版本检查失败', ['error' => $e->getMessage()]);
 
-            return $base + ['message' => '无法连接版本服务：' . cmspro_sensitivewords_sanitize_text($e->getMessage())];
+            return array_merge($base, ['message' => '无法连接版本服务：' . cmspro_sensitivewords_sanitize_text($e->getMessage())]);
         }
     }
 
