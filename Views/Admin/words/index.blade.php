@@ -167,7 +167,7 @@
 <!-- 批量导入弹窗模板 -->
 <script type="text/html" id="importTpl">
 @verbatim
-<div style="padding:20px;">
+<div class="layui-form" lay-filter="importForm" style="padding:20px;">
     <div class="layui-tab layui-tab-brief" lay-filter="importTab">
         <ul class="layui-tab-title">
             <li class="layui-this">粘贴文本</li>
@@ -429,9 +429,9 @@ layui.use(['table', 'form', 'layer', 'element', 'jquery'], function () {
             btn: ['开始导入', '取消'],
             success: function (layero) {
                 element.render('tab', 'importTab');
-                form.render(null, 'importTpl');
-                // 弹窗内的 select 需重新渲染（layui form.render 作用于全局）
-                form.render('select');
+                // 模板根节点带 .layui-form[lay-filter=importForm]，
+                // form.render 仅作用于 .layui-form 容器内元素，第二参数须传该 lay-filter 值
+                form.render(null, 'importForm');
             },
             yes: function (index, layero) {
                 var activeTab = layero.find('.layui-tab-title .layui-this').index();

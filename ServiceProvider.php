@@ -71,6 +71,19 @@ class ServiceProvider extends BaseServiceProvider
         $this->registerRoutes();
         $this->loadViews();
         $this->registerHooks();
+        $this->registerCommands();
+    }
+
+    /**
+     * 注册应用级 Artisan 命令。
+     *
+     * 仅注册命令类本身，不查数据库，遵循 register/boot 职责划分。
+     */
+    protected function registerCommands(): void
+    {
+        $this->commands([
+            Console\Commands\SeedTestDataCommand::class,
+        ]);
     }
 
     /**
